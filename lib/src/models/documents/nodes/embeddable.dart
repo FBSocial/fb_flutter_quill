@@ -11,6 +11,7 @@ class Embeddable {
 
   /// The data payload of this object.
   final dynamic data;
+
   // 修改
   // Map<String, dynamic> toJson() {
   //   final m = <String, String>{type: data};
@@ -18,7 +19,7 @@ class Embeddable {
   // }
   Map<String, dynamic> toJson() {
     if (type == 'image' || type == 'video') {
-      return data;
+      return data is Map ? data : toFormalJson();
     }
     return toFormalJson();
   }
@@ -37,7 +38,7 @@ class Embeddable {
   // }
   static Embeddable fromJson(Map<String, dynamic> json) {
     final m = Map<String, dynamic>.from(json);
-    assert(m.length > 0, 'Embeddable can not be empty');
+    assert(m.length == 1, 'Embeddable map must only have one key');
     if (m.length > 1 && m.containsKey('_type')) {
       final type = m['_type'];
       if (type == 'image') {
@@ -47,12 +48,12 @@ class Embeddable {
         return VideoEmbed.fromJson(m);
       }
     }
-    if (m.containsKey('image')) {
-      return ImageEmbed.fromJson(m['image']);
-    }
-    if (m.containsKey('video')) {
-      return VideoEmbed.fromJson(m['video']);
-    }
+    // if (m.containsKey('image')) {
+    //   return ImageEmbed.fromJson(m['image']);
+    // }
+    // if (m.containsKey('video')) {
+    //   return VideoEmbed.fromJson(m['video']);
+    // }
     if (m.containsKey('mention')) {
       return MentionEmbed.fromJson(m['mention']);
     }
@@ -67,34 +68,38 @@ class BlockEmbed extends Embeddable {
   const BlockEmbed(String type, String data) : super(type, data);
 
   static const String imageType = 'image';
+
   static BlockEmbed image(String imageUrl) => BlockEmbed(imageType, imageUrl);
 
   static const String videoType = 'video';
+
   static BlockEmbed video(String videoUrl) => BlockEmbed(videoType, videoUrl);
 }
 
 // 修改
 class ImageEmbed extends Embeddable {
+  ImageEmbed({
+    required this.source,
+    required this.width,
+    required this.height,
+    this.name,
+    this.checkPath,
+  }) : super('image', {
+          'name': name,
+          'source': source,
+          'width': width,
+          'height': height,
+          'checkPath': checkPath,
+          '_type': 'image',
+          '_inline': false,
+        });
+
   final String? name;
   final String? checkPath;
   final String source;
   final num width;
   final num height;
-  ImageEmbed({
-    this.name,
-    this.checkPath,
-    required this.source,
-    required this.width,
-    required this.height,
-  }) : super('image', {
-    'name': name,
-    'source': source,
-    'width': width,
-    'height': height,
-    'checkPath': checkPath,
-    '_type': 'image',
-    '_inline': false,
-  });
+
   @override
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -107,6 +112,7 @@ class ImageEmbed extends Embeddable {
       '_inline': false,
     };
   }
+
   @override
   Map<String, dynamic> toFormalJson() {
     final res = <String, dynamic>{
@@ -139,13 +145,6 @@ class ImageEmbed extends Embeddable {
 }
 
 class VideoEmbed extends Embeddable {
-  final num width;
-  final num height;
-  final String source;
-  final String fileType;
-  final num duration;
-  final String thumbUrl;
-  final String? thumbName;
   VideoEmbed({
     required this.width,
     required this.height,
@@ -155,16 +154,25 @@ class VideoEmbed extends Embeddable {
     required this.thumbUrl,
     this.thumbName,
   }) : super('video', {
-    'width': width,
-    'height': height,
-    'source': source,
-    'fileType': fileType,
-    'duration': duration,
-    'thumbUrl': thumbUrl,
-    'thumbName': thumbName,
-    '_type': 'video',
-    '_inline': false,
-  });
+          'width': width,
+          'height': height,
+          'source': source,
+          'fileType': fileType,
+          'duration': duration,
+          'thumbUrl': thumbUrl,
+          'thumbName': thumbName,
+          '_type': 'video',
+          '_inline': false,
+        });
+
+  final num width;
+  final num height;
+  final String source;
+  final String fileType;
+  final num duration;
+  final String thumbUrl;
+  final String? thumbName;
+
   @override
   Map<String, dynamic> toJson() {
     return <String, dynamic>{
@@ -179,6 +187,7 @@ class VideoEmbed extends Embeddable {
       '_inline': false,
     };
   }
+
   @override
   Map<String, dynamic> toFormalJson() {
     return <String, dynamic>{
@@ -218,6 +227,17 @@ class VideoEmbed extends Embeddable {
 }
 
 class MentionEmbed extends Embeddable {
+  MentionEmbed({
+    required this.denotationChar,
+    required this.id,
+    required this.value,
+    required this.prefixChar,
+  }) : super('mention', {
+          'denotationChar': denotationChar,
+          'id': id,
+          'value': value,
+          'prefixChar': prefixChar,
+        });
 
   String denotationChar;
   String id;
@@ -238,18 +258,6 @@ class MentionEmbed extends Embeddable {
         return 'at';
     }
   }
-
-  MentionEmbed({
-    required this.denotationChar,
-    required this.id,
-    required this.value,
-    required this.prefixChar,
-  }) : super('mention', {
-    'denotationChar': denotationChar,
-    'id': id,
-    'value': value,
-    'prefixChar': prefixChar,
-  });
 
   @override
   Map<String, dynamic> toFormalJson() {
@@ -272,7 +280,8 @@ class MentionEmbed extends Embeddable {
     );
   }
 
-  static MentionEmbed fromAttribute(String id, String prefixChar, String value) {
+  static MentionEmbed fromAttribute(
+      String id, String prefixChar, String value) {
     return MentionEmbed(
       denotationChar: '',
       id: id,
@@ -280,5 +289,4 @@ class MentionEmbed extends Embeddable {
       prefixChar: prefixChar,
     );
   }
-
 }

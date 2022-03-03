@@ -158,6 +158,8 @@ class DefaultStyles {
     this.sizeSmall,
     this.sizeLarge,
     this.sizeHuge,
+    this.at,
+    this.channel,
   });
 
   final DefaultTextBlockStyle? h1;
@@ -169,6 +171,8 @@ class DefaultStyles {
   final TextStyle? small;
   final TextStyle? underline;
   final TextStyle? strikeThrough;
+  final TextStyle? at;
+  final TextStyle? channel;
 
   /// Theme of inline code.
   final InlineCodeStyle? inlineCode;

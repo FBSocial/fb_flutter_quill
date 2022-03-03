@@ -10,6 +10,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/documents/attribute.dart';
 import '../models/documents/nodes/container.dart' as container_node;
+import '../models/documents/nodes/embeddable.dart';
 import '../models/documents/nodes/leaf.dart';
 import '../models/documents/nodes/leaf.dart' as leaf;
 import '../models/documents/nodes/line.dart';
@@ -38,6 +39,9 @@ class TextLine extends StatefulWidget {
     required this.linkActionPicker,
     this.textDirection,
     this.customStyleBuilder,
+    // 修改，添加mentionBuilder
+    this.mentionBuilder,
+    this.emojiBuilder,
     Key? key,
   }) : super(key: key);
 
@@ -50,6 +54,8 @@ class TextLine extends StatefulWidget {
   final CustomStyleBuilder? customStyleBuilder;
   final ValueChanged<String>? onLaunchUrl;
   final LinkActionPicker linkActionPicker;
+  final InlineSpan Function(Embed)? mentionBuilder;
+  final InlineSpan Function(String)? emojiBuilder;
 
   @override
   State<TextLine> createState() => _TextLineState();
@@ -133,9 +139,31 @@ class _TextLineState extends State<TextLine> {
     if (widget.line.hasEmbed && widget.line.childCount == 1) {
       // For video, it is always single child
       final embed = widget.line.children.single as Embed;
-      return EmbedProxy(widget.embedBuilder(
-          context, widget.controller, embed, widget.readOnly));
+      //  修改，添加判断是否VideoEmbed或者ImageEmbed
+      // if (embed.value is VideoEmbed || embed.value is ImageEmbed) {
+      //   // 修改，添加embedSize参数
+      //   final width = (embed.value.data['width'] ?? 100).toDouble();
+      //   final height = (embed.value.data['height'] ?? 100).toDouble();
+      //   final size =
+      //       (width != null && height != null) ? Size(width, height) : null;
+      //
+      //   return EmbedProxy(
+      //       widget.embedBuilder(
+      //           context, widget.controller, embed, widget.readOnly),
+      //       embedSize: size);
+      // } else
+      if (embed.value is BlockEmbed && embed.value.type == 'divider') {
+        /// 修改，下划线回调
+        return EmbedProxy(
+            widget.embedBuilder(
+                context, widget.controller, embed, widget.readOnly),
+            embedSize: null);
+      } else {
+        return EmbedProxy(widget.embedBuilder(
+            context, widget.controller, embed, widget.readOnly));
+      }
     }
+
     final textSpan = _getTextSpanForWholeLine(context);
     final strutStyle = StrutStyle.fromTextStyle(textSpan.style!);
     final textAlign = _getTextAlign();
@@ -207,6 +235,15 @@ class _TextLineState extends State<TextLine> {
 
   TextSpan _buildTextSpan(DefaultStyles defaultStyles, LinkedList<Node> nodes,
       TextStyle lineStyle) {
+    // NOTE: 2022/3/2 待确认是否存在该问题
+    // 修改，修复RichText 为空或者换行字符时高度为0，插入一个特殊空字符占位
+    // final isWrapLine = line.toPlainText() == '\n';
+    // final useTempLine = kIsWeb && isWrapLine;
+    // final newLine = Line();
+    // if (useTempLine) {
+    //   newLine.insert(0, '\u{200B}', Style());
+    // }
+
     final children = nodes
         .map((node) =>
             _getTextSpanFromNode(defaultStyles, node, widget.line.style))
@@ -272,18 +309,73 @@ class _TextLineState extends State<TextLine> {
 
   TextSpan _getTextSpanFromNode(
       DefaultStyles defaultStyles, Node node, Style lineStyle) {
+    // TODO: 2022/3/2 需要业务分离TextLine与提及
+    if (node is Embed) {
+      final nodeStyle = node.style;
+      final isMention = nodeStyle.containsKey(Attribute.at.key) &&
+          nodeStyle.attributes[Attribute.at.key]?.value != null;
+      if (isMention && widget.mentionBuilder != null) {
+        // NOTE: 2022/3/2 通过外部获取@的TextSpan
+        return widget.mentionBuilder!.call(node) as TextSpan? ??
+            TextSpan(text: node.value.toString());
+      }
+      return const TextSpan(text: '');
+    }
+
     final textNode = node as leaf.Text;
     final nodeStyle = textNode.style;
     final isLink = nodeStyle.containsKey(Attribute.link.key) &&
         nodeStyle.attributes[Attribute.link.key]!.value != null;
 
-    return TextSpan(
-      text: textNode.value,
-      style: _getInlineTextStyle(
-          textNode, defaultStyles, nodeStyle, lineStyle, isLink),
-      recognizer: isLink && canLaunchLinks ? _getRecognizer(node) : null,
-      mouseCursor: isLink && canLaunchLinks ? SystemMouseCursors.click : null,
-    );
+    final children = <InlineSpan>[];
+    if (isLink) {
+      return TextSpan(
+        text: textNode.value,
+        style: _getInlineTextStyle(
+            textNode, defaultStyles, nodeStyle, lineStyle, true),
+        recognizer: canLaunchLinks ? _getRecognizer(node) : null,
+        mouseCursor: canLaunchLinks ? SystemMouseCursors.click : null,
+      );
+    } else {
+      final emojiSeparator = String.fromCharCode(0);
+      // NOTE: 2022/3/2 机器人会带入链接，因为Attribute值非Attribute.link，需要手动处理
+      // 匹配表情和url
+      final newText = textNode.value.splitMapJoin(
+          RegExp(
+              r'\[.*?\]|(http(s)?):\/\/[(www\.)?a-zA-Z0-9@:._\+~#=-]{1,256}\.[a-z0-9]{2,6}\b([-a-zA-Z0-9!@:_\+.~#?&//=%,]*)'),
+          onMatch: (m) => '$emojiSeparator${m.group(0)}$emojiSeparator',
+          onNonMatch: (m) => m);
+
+      final splits = newText.split(emojiSeparator);
+      for (final e in splits) {
+        if (e.isEmpty) continue;
+        if (e[0] == '[' && e[e.length - 1] == ']') {
+          final emojiName = e.substring(1, e.length - 1);
+          // TODO: 2022/3/2 需要外部传入Builder显示图标
+          if (/*widget.readOnly &&*/ widget.emojiBuilder != null) {
+            children.add(widget.emojiBuilder!.call(emojiName));
+          } else {
+            children.add(TextSpan(
+              text: e,
+              style: _getInlineTextStyle(
+                  textNode, defaultStyles, nodeStyle, lineStyle, false),
+            ));
+          }
+        } else {
+          final _isLink = e.startsWith('http');
+          children.add(TextSpan(
+            text: e,
+            style: _getInlineTextStyle(
+                textNode, defaultStyles, nodeStyle, lineStyle, _isLink),
+            recognizer: _isLink && canLaunchLinks ? _getRecognizer(node) : null,
+            mouseCursor:
+                _isLink && canLaunchLinks ? SystemMouseCursors.click : null,
+          ));
+        }
+      }
+    }
+
+    return TextSpan(children: children);
   }
 
   TextStyle _getInlineTextStyle(leaf.Text textNode, DefaultStyles defaultStyles,
@@ -298,6 +390,9 @@ class _TextLineState extends State<TextLine> {
       Attribute.link.key: defaultStyles.link,
       Attribute.underline.key: defaultStyles.underline,
       Attribute.strikeThrough.key: defaultStyles.strikeThrough,
+      // NOTE: 2022/3/2 添加@与#样式
+      Attribute.at.key: defaultStyles.at,
+      Attribute.channel.key: defaultStyles.channel,
     }.forEach((k, s) {
       if (nodeStyle.values.any((v) => v.key == k)) {
         if (k == Attribute.underline.key || k == Attribute.strikeThrough.key) {

@@ -16,6 +16,7 @@ import '../models/documents/attribute.dart';
 import '../models/documents/document.dart';
 import '../models/documents/nodes/block.dart';
 import '../models/documents/nodes/embeddable.dart';
+import '../models/documents/nodes/leaf.dart';
 import '../models/documents/nodes/line.dart';
 import '../models/documents/nodes/node.dart';
 import '../models/documents/style.dart';
@@ -39,48 +40,58 @@ import 'text_line.dart';
 import 'text_selection.dart';
 
 class RawEditor extends StatefulWidget {
-  const RawEditor(
-      {required this.controller,
-      required this.focusNode,
-      required this.scrollController,
-      required this.scrollBottomInset,
-      required this.cursorStyle,
-      required this.selectionColor,
-      required this.selectionCtrls,
-      Key? key,
-      this.scrollable = true,
-      this.padding = EdgeInsets.zero,
-      this.readOnly = false,
-      this.placeholder,
-      this.onLaunchUrl,
-      this.toolbarOptions = const ToolbarOptions(
-        copy: true,
-        cut: true,
-        paste: true,
-        selectAll: true,
-      ),
-      this.showSelectionHandles = false,
-      bool? showCursor,
-      this.textCapitalization = TextCapitalization.none,
-      this.maxHeight,
-      this.minHeight,
-      this.maxContentWidth,
-      this.customStyles,
-      this.expands = false,
-      this.autoFocus = false,
-      this.keyboardAppearance = Brightness.light,
-      this.enableInteractiveSelection = true,
-      this.scrollPhysics,
-      this.embedBuilder = defaultEmbedBuilder,
-      this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
-      this.customStyleBuilder,
-      this.floatingCursorDisabled = false})
-      : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
+  const RawEditor({
+    required this.controller,
+    required this.focusNode,
+    required this.scrollController,
+    required this.scrollBottomInset,
+    required this.cursorStyle,
+    required this.selectionColor,
+    required this.selectionCtrls,
+    this.scrollable = true,
+    this.padding = EdgeInsets.zero,
+    this.readOnly = false,
+    this.placeholder,
+    this.onLaunchUrl,
+    this.toolbarOptions = const ToolbarOptions(
+      copy: true,
+      cut: true,
+      paste: true,
+      selectAll: true,
+    ),
+    this.showSelectionHandles = false,
+    bool? showCursor,
+    this.textCapitalization = TextCapitalization.none,
+    this.maxHeight,
+    this.minHeight,
+    this.maxContentWidth,
+    this.customStyles,
+    this.expands = false,
+    this.autoFocus = false,
+    this.keyboardAppearance = Brightness.light,
+    this.enableInteractiveSelection = true,
+    this.scrollPhysics,
+    this.embedBuilder = defaultEmbedBuilder,
+    this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
+    this.customStyleBuilder,
+    this.floatingCursorDisabled = false,
+    this.mentionBuilder,
+    // this.mouseCursors,
+    this.pasteExtension,
+    Key? key,
+  })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
             'maxHeight cannot be null'),
         showCursor = showCursor ?? true,
         super(key: key);
+
+  // 修改，添加mention builder
+  final InlineSpan Function(Embed)? mentionBuilder;
+
+  // 修改，添加是否可编辑参数
+  // final MouseCursor? mouseCursors;
+  final VoidCallback? pasteExtension;
 
   /// Controls the document being edited.
   final QuillController controller;
@@ -260,6 +271,7 @@ class RawEditorState extends EditorState
 
   // Focus
   bool _didAutoFocus = false;
+
   bool get _hasFocus => widget.focusNode.hasFocus;
 
   // Theme
@@ -269,6 +281,7 @@ class RawEditorState extends EditorState
   @override
   List<Tuple2<int, Style>> get pasteStyle => _pasteStyle;
   List<Tuple2<int, Style>> _pasteStyle = <Tuple2<int, Style>>[];
+
   @override
   String get pastePlainText => _pastePlainText;
   String _pastePlainText = '';
@@ -452,8 +465,9 @@ class RawEditorState extends EditorState
             styles: _styles,
             enableInteractiveSelection: widget.enableInteractiveSelection,
             hasFocus: _hasFocus,
+            // NOTE: 2022/3/2 调整默认间距16=》8
             contentPadding: attrs.containsKey(Attribute.codeBlock.key)
-                ? const EdgeInsets.all(16)
+                ? const EdgeInsets.all(8)
                 : null,
             embedBuilder: widget.embedBuilder,
             linkActionPicker: _linkActionPicker,
@@ -462,6 +476,7 @@ class RawEditorState extends EditorState
             indentLevelCounts: indentLevelCounts,
             onCheckboxTap: _handleCheckboxTap,
             readOnly: widget.readOnly,
+            mentionBuilder: widget.mentionBuilder,
             customStyleBuilder: widget.customStyleBuilder);
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
@@ -484,6 +499,7 @@ class RawEditorState extends EditorState
       controller: widget.controller,
       linkActionPicker: _linkActionPicker,
       onLaunchUrl: widget.onLaunchUrl,
+      mentionBuilder: widget.mentionBuilder,
     );
     final editableTextLine = EditableTextLine(
         node,
@@ -769,6 +785,8 @@ class RawEditorState extends EditorState
     } else {
       WidgetsBinding.instance!.removeObserver(this);
     }
+    // 修改，修复编辑器focus后selection不变的情况下光标丢失问题
+    setState(() {});
     updateKeepAlive();
   }
 
@@ -1393,6 +1411,7 @@ class _DocumentBoundary extends _TextBoundary {
   @override
   TextPosition getLeadingTextBoundaryAt(TextPosition position) =>
       const TextPosition(offset: 0);
+
   @override
   TextPosition getTrailingTextBoundaryAt(TextPosition position) {
     return TextPosition(

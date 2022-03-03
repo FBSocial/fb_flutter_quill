@@ -66,8 +66,10 @@ class EditableTextBlock extends StatelessWidget {
       required this.readOnly,
       this.onLaunchUrl,
       this.customStyleBuilder,
+      this.mentionBuilder,
       Key? key});
 
+  final InlineSpan Function(Embed)? mentionBuilder;
   final Block block;
   final QuillController controller;
   final TextDirection textDirection;

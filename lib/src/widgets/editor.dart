@@ -11,6 +11,7 @@ import 'package:tuple/tuple.dart';
 
 import '../models/documents/document.dart';
 import '../models/documents/nodes/container.dart' as container_node;
+import '../models/documents/nodes/leaf.dart' as leaf;
 import '../models/documents/style.dart';
 import '../utils/platform.dart';
 import 'box.dart';
@@ -172,6 +173,8 @@ class QuillEditor extends StatefulWidget {
       this.customStyleBuilder,
       this.locale,
       this.floatingCursorDisabled = false,
+      this.pasteExtension,
+      this.mentionBuilder,
       Key? key})
       : super(key: key);
 
@@ -192,6 +195,9 @@ class QuillEditor extends StatefulWidget {
       keyboardAppearance: keyboardAppearance ?? Brightness.light,
     );
   }
+
+  final TextSpan Function(leaf.Embed)? mentionBuilder;
+  final VoidCallback? pasteExtension;
 
   /// Controller object which establishes a link between a rich text document
   /// and this editor.
@@ -333,6 +339,7 @@ class QuillEditor extends StatefulWidget {
   // Returns whether gesture is handled
   final bool Function(LongPressMoveUpdateDetails details,
       TextPosition Function(Offset offset))? onSingleLongTapMoveUpdate;
+
   // Returns whether gesture is handled
   final bool Function(
           LongPressEndDetails details, TextPosition Function(Offset offset))?
@@ -456,6 +463,8 @@ class QuillEditorState extends State<QuillEditor>
       linkActionPickerDelegate: widget.linkActionPickerDelegate,
       customStyleBuilder: widget.customStyleBuilder,
       floatingCursorDisabled: widget.floatingCursorDisabled,
+      mentionBuilder: widget.mentionBuilder,
+      pasteExtension: widget.pasteExtension,
     );
 
     final editor = I18n(
@@ -869,6 +878,7 @@ class RenderEditor extends RenderEditableContainerBox
   }
 
   double? _maxContentWidth;
+
   set maxContentWidth(double? value) {
     if (_maxContentWidth == value) return;
     _maxContentWidth = value;
