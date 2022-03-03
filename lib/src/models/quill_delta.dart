@@ -931,6 +931,13 @@ class Delta {
 
   @override
   String toString() => _operations.join('\n');
+
+  // 修改，添加fromJson2，使用flutter版本编辑器时使用此方法
+  static Delta fromJson2(List data, {DataDecoder? dataDecoder}) {
+    return Delta._(data
+        .map((op) => Operation.fromJson2(op, dataDecoder: dataDecoder))
+        .toList());
+  }
 }
 
 /// Specialized iterator for [Delta]s.

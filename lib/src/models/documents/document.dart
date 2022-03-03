@@ -21,6 +21,11 @@ class Document {
     _loadDocument(_delta);
   }
 
+  // 修改，添加fromJson2方法，使用flutter版本编辑器时使用此方法
+  Document.fromJson2(List data) : _delta = _transform(Delta.fromJson2(data)) {
+    _loadDocument(_delta);
+  }
+
   /// Creates new document from provided JSON `data`.
   Document.fromJson(List data) : _delta = _transform(Delta.fromJson(data)) {
     _loadDocument(_delta);
