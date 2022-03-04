@@ -38,7 +38,7 @@ class Embeddable {
   // }
   static Embeddable fromJson(Map<String, dynamic> json) {
     final m = Map<String, dynamic>.from(json);
-    assert(m.length == 1, 'Embeddable map must only have one key');
+    assert(m.isNotEmpty, 'Embeddable can not be empty');
     if (m.length > 1 && m.containsKey('_type')) {
       final type = m['_type'];
       if (type == 'image') {

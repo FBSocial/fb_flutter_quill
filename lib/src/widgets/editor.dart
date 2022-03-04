@@ -196,7 +196,7 @@ class QuillEditor extends StatefulWidget {
     );
   }
 
-  final TextSpan Function(leaf.Embed)? mentionBuilder;
+  final InlineSpan Function(leaf.Embed)? mentionBuilder;
   final VoidCallback? pasteExtension;
 
   /// Controller object which establishes a link between a rich text document
