@@ -307,7 +307,7 @@ class _TextLineState extends State<TextLine> {
     return textStyle;
   }
 
-  TextSpan _getTextSpanFromNode(
+  InlineSpan _getTextSpanFromNode(
       DefaultStyles defaultStyles, Node node, Style lineStyle) {
     // TODO: 2022/3/2 需要业务分离TextLine与提及
     if (node is Embed) {
@@ -316,10 +316,9 @@ class _TextLineState extends State<TextLine> {
           nodeStyle.attributes[Attribute.at.key]?.value != null;
       if (isMention && widget.mentionBuilder != null) {
         // NOTE: 2022/3/2 通过外部获取@的TextSpan
-        return widget.mentionBuilder!.call(node) as TextSpan? ??
-            TextSpan(text: node.value.toString());
+        return widget.mentionBuilder!.call(node);
       }
-      return const TextSpan(text: '');
+      return TextSpan(text: node.value.toString());
     }
 
     final textNode = node as leaf.Text;

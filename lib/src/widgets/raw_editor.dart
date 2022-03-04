@@ -786,7 +786,7 @@ class RawEditorState extends EditorState
       WidgetsBinding.instance!.removeObserver(this);
     }
     // 修改，修复编辑器focus后selection不变的情况下光标丢失问题
-    setState(() {});
+    // setState(() {});
     updateKeepAlive();
   }
 
