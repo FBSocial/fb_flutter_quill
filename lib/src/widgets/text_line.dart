@@ -312,8 +312,10 @@ class _TextLineState extends State<TextLine> {
     // TODO: 2022/3/2 需要业务分离TextLine与提及
     if (node is Embed) {
       final nodeStyle = node.style;
-      final isMention = nodeStyle.containsKey(Attribute.at.key) &&
-          nodeStyle.attributes[Attribute.at.key]?.value != null;
+      final isMention = (nodeStyle.containsKey(Attribute.at.key) &&
+              nodeStyle.attributes[Attribute.at.key]?.value != null) ||
+          (nodeStyle.containsKey(Attribute.channel.key) &&
+              nodeStyle.attributes[Attribute.channel.key]?.value != null);
       if (isMention && widget.mentionBuilder != null) {
         // NOTE: 2022/3/2 通过外部获取@的TextSpan
         return widget.mentionBuilder!.call(node);

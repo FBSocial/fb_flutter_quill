@@ -4,7 +4,6 @@ import 'package:tuple/tuple.dart';
 
 import '../../flutter_quill.dart';
 import '../models/documents/nodes/block.dart';
-import '../models/documents/nodes/line.dart';
 import '../utils/delta.dart';
 import 'box.dart';
 import 'cursor.dart';
