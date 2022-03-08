@@ -175,6 +175,7 @@ class QuillEditor extends StatefulWidget {
       this.floatingCursorDisabled = false,
       this.pasteExtension,
       this.mentionBuilder,
+      this.emojiBuilder,
       Key? key})
       : super(key: key);
 
@@ -197,7 +198,12 @@ class QuillEditor extends StatefulWidget {
   }
 
   final InlineSpan Function(leaf.Embed)? mentionBuilder;
+
+  /// 粘贴图片回调
   final VoidCallback? pasteExtension;
+
+  /// 表情解析器
+  final InlineSpan Function(String)? emojiBuilder;
 
   /// Controller object which establishes a link between a rich text document
   /// and this editor.
@@ -465,6 +471,7 @@ class QuillEditorState extends State<QuillEditor>
       floatingCursorDisabled: widget.floatingCursorDisabled,
       mentionBuilder: widget.mentionBuilder,
       pasteExtension: widget.pasteExtension,
+      emojiBuilder: widget.emojiBuilder,
     );
 
     final editor = I18n(

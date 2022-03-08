@@ -40,6 +40,7 @@ import 'text_line.dart';
 import 'text_selection.dart';
 
 class RawEditor extends StatefulWidget {
+
   const RawEditor({
     required this.controller,
     required this.focusNode,
@@ -76,7 +77,7 @@ class RawEditor extends StatefulWidget {
     this.customStyleBuilder,
     this.floatingCursorDisabled = false,
     this.mentionBuilder,
-    // this.mouseCursors,
+    this.emojiBuilder,
     this.pasteExtension,
     Key? key,
   })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
@@ -88,6 +89,9 @@ class RawEditor extends StatefulWidget {
 
   // 修改，添加mention builder
   final InlineSpan Function(Embed)? mentionBuilder;
+
+  /// 表情解析器
+  final InlineSpan Function(String)? emojiBuilder;
 
   // 修改，添加是否可编辑参数
   // final MouseCursor? mouseCursors;
@@ -500,6 +504,7 @@ class RawEditorState extends EditorState
       linkActionPicker: _linkActionPicker,
       onLaunchUrl: widget.onLaunchUrl,
       mentionBuilder: widget.mentionBuilder,
+      emojiBuilder: widget.emojiBuilder,
     );
     final editableTextLine = EditableTextLine(
         node,
