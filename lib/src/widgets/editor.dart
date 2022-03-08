@@ -203,7 +203,7 @@ class QuillEditor extends StatefulWidget {
   final VoidCallback? pasteExtension;
 
   /// 表情解析器
-  final InlineSpan Function(String)? emojiBuilder;
+  final InlineSpan? Function(String)? emojiBuilder;
 
   /// Controller object which establishes a link between a rich text document
   /// and this editor.

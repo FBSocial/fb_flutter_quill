@@ -55,7 +55,7 @@ class TextLine extends StatefulWidget {
   final ValueChanged<String>? onLaunchUrl;
   final LinkActionPicker linkActionPicker;
   final InlineSpan Function(Embed)? mentionBuilder;
-  final InlineSpan Function(String)? emojiBuilder;
+  final InlineSpan? Function(String)? emojiBuilder;
 
   @override
   State<TextLine> createState() => _TextLineState();
@@ -349,10 +349,14 @@ class _TextLineState extends State<TextLine> {
       for (final e in splits) {
         if (e.isEmpty) continue;
         if (e[0] == '[' && e[e.length - 1] == ']') {
+          var child;
           final emojiName = e.substring(1, e.length - 1);
           // TODO: 2022/3/2 需要外部传入Builder显示图标
           if (/*widget.readOnly &&*/ widget.emojiBuilder != null) {
-            children.add(widget.emojiBuilder!.call(emojiName));
+            child = widget.emojiBuilder!.call(emojiName);
+          }
+          if (child != null) {
+            children.add(child);
           } else {
             children.add(TextSpan(
               text: e,

@@ -91,7 +91,7 @@ class RawEditor extends StatefulWidget {
   final InlineSpan Function(Embed)? mentionBuilder;
 
   /// 表情解析器
-  final InlineSpan Function(String)? emojiBuilder;
+  final InlineSpan? Function(String)? emojiBuilder;
 
   // 修改，添加是否可编辑参数
   // final MouseCursor? mouseCursors;
