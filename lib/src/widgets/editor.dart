@@ -62,6 +62,16 @@ abstract class RenderAbstractEditor implements TextLayoutMetrics {
   /// Useful to enforce visibility of full caret at given position
   Rect getLocalRectForCaret(TextPosition position);
 
+  /// Returns the smallest [Rect], in the local coordinate system, that covers
+  /// the text within the [TextRange] specified.
+  ///
+  /// This method is used to calculate the approximate position of the IME bar
+  /// on iOS.
+  ///
+  /// Returns null if [TextRange.isValid] is false for the given `range`, or the
+  /// given `range` is collapsed.
+  Rect getRectForComposingRange(TextRange range);
+
   /// Returns the local coordinates of the endpoints of the given selection.
   ///
   /// If the selection is collapsed (and therefore occupies a single point), the
@@ -1333,27 +1343,12 @@ class RenderEditor extends RenderEditableContainerBox
     return childLocalRect.shift(Offset(0, boxParentData.offset.dy));
   }
 
-  /// Returns the smallest [Rect], in the local coordinate system, that covers
-  /// the text within the [TextRange] specified.
-  ///
-  /// This method is used to calculate the approximate position of the IME bar
-  /// on iOS.
-  ///
-  /// Returns null if [TextRange.isValid] is false for the given `range`, or the
-  /// given `range` is collapsed.
-  Rect? getRectForComposingRange(TextRange range) {
-    if (!range.isValid || range.isCollapsed) return null;
-
-    //markNeedsLayout();
-    // computeMaxIntrinsicHeight(width);
-
-    // final List<TextBox> boxes = getBoxesForSelection(
-    //   TextSelection(baseOffset: range.start, extentOffset: range.end),
-    //   // boxHeightStyle: selectionHeightStyle,
-    //   // boxWidthStyle: selectionWidthStyle,
-    // );
-
-    return _floatingCursorRect;
+  @override
+  Rect getRectForComposingRange(TextRange range) {
+    final endPosition =
+        TextPosition(offset: selection.end, affinity: selection.affinity);
+    final endOffset = _getOffsetForCaret(endPosition);
+    return Offset.zero & Size(endOffset.dx, endOffset.dy + 2);
   }
 
   // Start floating cursor
