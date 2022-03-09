@@ -40,6 +40,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       openConnectionIfNeeded();
     } else if (!widget.focusNode.hasFocus) {
       closeConnectionIfNeeded();
+      // widget.controller.clearComposing();
     }
   }
 
@@ -63,6 +64,8 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       );
 
       _updateSizeAndTransform();
+      _updateComposingRectIfNeeded();
+      _updateCaretRectIfNeeded();
       _textInputConnection!.setEditingState(_lastKnownRemoteTextEditingValue!);
     }
 
@@ -308,6 +311,51 @@ mixin RawEditorStateTextInputClientMixin on EditorState
         final transform = renderEditor.getTransformTo(null);
         _textInputConnection?.setEditableSizeAndTransform(size, transform);
       });
+    }
+  }
+
+  // Sends the current composing rect to the iOS text input plugin via the text
+  // input channel. We need to keep sending the information even if no text is
+  // currently marked, as the information usually lags behind. The text input
+  // plugin needs to estimate the composing rect based on the latest caret rect,
+  // when the composing rect info didn't arrive in time.
+  void _updateComposingRectIfNeeded() {
+    final composingRange = textEditingValue.composing;
+    if (hasConnection) {
+      if (!mounted) {
+        return;
+      }
+      var composingRect = renderEditor.getRectForComposingRange(composingRange);
+      // Send the caret location instead if there's no marked text yet.
+      if (composingRect == null) {
+        assert(!composingRange.isValid || composingRange.isCollapsed);
+        final offset = composingRange.isValid ? composingRange.start : 0;
+        composingRect =
+            renderEditor.getLocalRectForCaret(TextPosition(offset: offset));
+      }
+      _textInputConnection!.setComposingRect(composingRect);
+
+      SchedulerBinding.instance!
+          .addPostFrameCallback((_) => _updateComposingRectIfNeeded());
+    }
+  }
+
+  void _updateCaretRectIfNeeded() {
+    if (hasConnection) {
+      if (!mounted) {
+        return;
+      }
+      if (renderEditor.selection.isValid &&
+          renderEditor.selection.isCollapsed) {
+        final currentTextPosition =
+            TextPosition(offset: renderEditor.selection.baseOffset);
+        final caretRect =
+            renderEditor.getLocalRectForCaret(currentTextPosition);
+        _textInputConnection!.setCaretRect(caretRect);
+      }
+
+      SchedulerBinding.instance!
+          .addPostFrameCallback((_) => _updateCaretRectIfNeeded());
     }
   }
 }

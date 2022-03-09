@@ -1333,6 +1333,29 @@ class RenderEditor extends RenderEditableContainerBox
     return childLocalRect.shift(Offset(0, boxParentData.offset.dy));
   }
 
+  /// Returns the smallest [Rect], in the local coordinate system, that covers
+  /// the text within the [TextRange] specified.
+  ///
+  /// This method is used to calculate the approximate position of the IME bar
+  /// on iOS.
+  ///
+  /// Returns null if [TextRange.isValid] is false for the given `range`, or the
+  /// given `range` is collapsed.
+  Rect? getRectForComposingRange(TextRange range) {
+    if (!range.isValid || range.isCollapsed) return null;
+
+    //markNeedsLayout();
+    // computeMaxIntrinsicHeight(width);
+
+    // final List<TextBox> boxes = getBoxesForSelection(
+    //   TextSelection(baseOffset: range.start, extentOffset: range.end),
+    //   // boxHeightStyle: selectionHeightStyle,
+    //   // boxWidthStyle: selectionWidthStyle,
+    // );
+
+    return _floatingCursorRect;
+  }
+
   // Start floating cursor
 
   FloatingCursorPainter get _floatingCursorPainter => FloatingCursorPainter(
