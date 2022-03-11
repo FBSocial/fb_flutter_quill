@@ -153,7 +153,7 @@ class VideoEmbed extends Embeddable {
     required this.duration,
     required this.thumbUrl,
     this.thumbName,
-    required this.name,
+    this.name,
   }) : super('video', {
           'width': width,
           'height': height,
@@ -174,7 +174,7 @@ class VideoEmbed extends Embeddable {
   final num duration;
   final String thumbUrl;
   final String? thumbName;
-  final String name;
+  final String? name;
 
   @override
   Map<String, dynamic> toJson() {
