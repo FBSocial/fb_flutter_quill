@@ -1348,7 +1348,9 @@ class RenderEditor extends RenderEditableContainerBox
     final endPosition =
         TextPosition(offset: selection.end, affinity: selection.affinity);
     final endOffset = _getOffsetForCaret(endPosition);
-    return Offset.zero & Size(endOffset.dx, endOffset.dy + 2);
+
+    return (Offset.zero & Size(endOffset.dx, endOffset.dy + 2))
+        .shift(_paintOffset);
   }
 
   // Start floating cursor
