@@ -999,6 +999,8 @@ class RawEditorState extends EditorState
     // See https://github.com/flutter/flutter/issues/11427
     final data = await Clipboard.getData(Clipboard.kTextPlain);
     if (data == null) {
+      /// NOTE: 响应外部粘贴回调
+      widget.pasteExtension?.call();
       return;
     }
 
