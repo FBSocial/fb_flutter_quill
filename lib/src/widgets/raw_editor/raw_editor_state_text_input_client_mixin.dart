@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/animation.dart';
@@ -145,6 +146,18 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       // selection.
       _lastKnownRemoteTextEditingValue = value;
       return;
+    }
+
+    // pc端中文组合输入法,可能会有多次回调,其中可能会存在数据与偏移量不匹配的情况,会导致replace
+    // 光标位置异常,需过滤掉
+    if (!kIsWeb && !Platform.isAndroid && !Platform.isIOS) {
+      if (!value.text.contains("'")) {
+        final d = getDiff(_lastKnownRemoteTextEditingValue!.text, value.text,
+            value.selection.extentOffset);
+        if (value.selection.extentOffset < (d.start + d.inserted.length)) {
+          return;
+        }
+      }
     }
 
     final effectiveLastKnownValue = _lastKnownRemoteTextEditingValue!;
