@@ -445,12 +445,15 @@ class Delta {
           final next = i < length - 1 ? operationList[i + 1] : null;
           if (isBlockEmbed && next != null && next.value is Map) {
             final nextEmbedType = Embeddable.fromJson(next.value).type;
-            final isNextBlockEmbed = nextEmbedType == 'image' ||
-                nextEmbedType == 'video' ||
-                nextEmbedType == 'divider';
+            final isNextBlockEmbed = /*nextEmbedType == 'image' ||*/
+                nextEmbedType == 'video' || nextEmbedType == 'divider';
             if (isNextBlockEmbed) {
               jsonList.add(operation.toJson());
-              jsonList.add({Operation.insertKey: '\n'});
+
+              /// NOTE: 2022/3/27 在不清楚业务逻辑的情况下，保守操作，进行排除
+              if (nextEmbedType != 'image') {
+                jsonList.add({Operation.insertKey: '\n'});
+              }
               continue;
             }
           }
