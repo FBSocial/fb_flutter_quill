@@ -148,15 +148,11 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       return;
     }
 
-    // pc端中文组合输入法,可能会有多次回调,其中可能会存在数据与偏移量不匹配的情况,会导致replace
-    // 光标位置异常,需过滤掉
+    // pc端中文组合输入法,过程中回调可能会导致富文本数据和光标位置异常,所以将中间组合过程忽略掉,
+    // 只取最后结果
     if (Platform.isWindows || Platform.isMacOS) {
-      if (!value.text.contains("'")) {
-        final d = getDiff(_lastKnownRemoteTextEditingValue!.text, value.text,
-            value.selection.extentOffset);
-        if (value.selection.extentOffset < (d.start + d.inserted.length)) {
-          return;
-        }
+      if (!value.composing.isCollapsed) {
+        return;
       }
     }
 
