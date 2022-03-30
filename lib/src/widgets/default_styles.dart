@@ -194,7 +194,7 @@ class DefaultStyles {
     final defaultTextStyle = DefaultTextStyle.of(context);
     final baseStyle = defaultTextStyle.style.copyWith(
       fontSize: 16,
-      height: 1.3,
+      height: 1.5,
     );
     // NOTE: 2022/3/4 修改baseSpacing为0（待验证）
     const baseSpacing = Tuple2<double, double>(0, 0);
