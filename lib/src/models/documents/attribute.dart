@@ -111,9 +111,9 @@ class Attribute<T> {
   static const String mobileMargin = 'mobileMargin';
 
   static const String mobileAlignment = 'mobileAlignment';
-  //  修改
+  
   static final AtAttribute at = AtAttribute(null);
-
+  
   static final ChannelAttribute channel = ChannelAttribute(null);
 
   static final Set<String> inlineKeys = {

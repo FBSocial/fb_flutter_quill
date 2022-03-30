@@ -494,7 +494,7 @@ class _TextLineState extends State<TextLine> {
   }
 
   void _tapNodeLink(Node node) {
-    final link = node.style.attributes[Attribute.link.key]!.value;
+    final link = node.style.attributes[Attribute.link.key]?.value;
 
     _tapLink(link);
   }

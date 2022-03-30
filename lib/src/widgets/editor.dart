@@ -355,7 +355,6 @@ class QuillEditor extends StatefulWidget {
   // Returns whether gesture is handled
   final bool Function(LongPressMoveUpdateDetails details,
       TextPosition Function(Offset offset))? onSingleLongTapMoveUpdate;
-
   // Returns whether gesture is handled
   final bool Function(
           LongPressEndDetails details, TextPosition Function(Offset offset))?
@@ -617,44 +616,47 @@ class _QuillEditorSelectionGestureDetectorBuilder
 
     editor!.hideToolbar();
 
-    if (delegate.selectionEnabled && !_isPositionSelected(details)) {
-      final _platform = Theme.of(_state.context).platform;
-      if (isAppleOS(_platform)) {
-        switch (details.kind) {
-          case PointerDeviceKind.mouse:
-          case PointerDeviceKind.stylus:
-          case PointerDeviceKind.invertedStylus:
-            // Precise devices should place the cursor at a precise position.
-            // If `Shift` key is pressed then
-            // extend current selection instead.
-            if (isShiftClick(details.kind)) {
-              renderEditor!
-                ..extendSelection(details.globalPosition,
-                    cause: SelectionChangedCause.tap)
-                ..onSelectionCompleted();
-            } else {
-              renderEditor!
-                ..selectPosition(cause: SelectionChangedCause.tap)
-                ..onSelectionCompleted();
-            }
+    try {
+      if (delegate.selectionEnabled && !_isPositionSelected(details)) {
+        final _platform = Theme.of(_state.context).platform;
+        if (isAppleOS(_platform)) {
+          switch (details.kind) {
+            case PointerDeviceKind.mouse:
+            case PointerDeviceKind.stylus:
+            case PointerDeviceKind.invertedStylus:
+              // Precise devices should place the cursor at a precise position.
+              // If `Shift` key is pressed then
+              // extend current selection instead.
+              if (isShiftClick(details.kind)) {
+                renderEditor!
+                  ..extendSelection(details.globalPosition,
+                      cause: SelectionChangedCause.tap)
+                  ..onSelectionCompleted();
+              } else {
+                renderEditor!
+                  ..selectPosition(cause: SelectionChangedCause.tap)
+                  ..onSelectionCompleted();
+              }
 
-            break;
-          case PointerDeviceKind.touch:
-          case PointerDeviceKind.unknown:
-            // On macOS/iOS/iPadOS a touch tap places the cursor at the edge
-            // of the word.
-            renderEditor!
-              ..selectWordEdge(SelectionChangedCause.tap)
-              ..onSelectionCompleted();
-            break;
+              break;
+            case PointerDeviceKind.touch:
+            case PointerDeviceKind.unknown:
+              // On macOS/iOS/iPadOS a touch tap places the cursor at the edge
+              // of the word.
+              renderEditor!
+                ..selectWordEdge(SelectionChangedCause.tap)
+                ..onSelectionCompleted();
+              break;
+          }
+        } else {
+          renderEditor!
+            ..selectPosition(cause: SelectionChangedCause.tap)
+            ..onSelectionCompleted();
         }
-      } else {
-        renderEditor!
-          ..selectPosition(cause: SelectionChangedCause.tap)
-          ..onSelectionCompleted();
       }
+    } finally {
+      _state._requestKeyboard();
     }
-    _state._requestKeyboard();
   }
 
   @override
@@ -895,7 +897,6 @@ class RenderEditor extends RenderEditableContainerBox
   }
 
   double? _maxContentWidth;
-
   set maxContentWidth(double? value) {
     if (_maxContentWidth == value) return;
     _maxContentWidth = value;
