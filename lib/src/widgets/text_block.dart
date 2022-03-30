@@ -143,6 +143,7 @@ class EditableTextBlock extends StatelessWidget {
             onLaunchUrl: onLaunchUrl,
             embedBuilder: embedBuilder,
             emojiBuilder: emojiBuilder,
+            mentionBuilder: mentionBuilder,
             linkParse: linkParse,
           ),
           _getIndentWidth(),
