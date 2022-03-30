@@ -375,12 +375,13 @@ class _TextLineState extends State<TextLine> {
             style: _getInlineTextStyle(
                 textNode, defaultStyles, nodeStyle, lineStyle, _isLink),
 
-            /// NOTE： 采用自定义的链接跳转
+            /// NOTE： 优先采用自定义的链接跳转
             recognizer: _isLink && canLaunchLinks
-                ? (TapGestureRecognizer()
-                  ..onTap = () => widget.linkParse?.call(e))
+                ? (widget.linkParse != null
+                    ? (TapGestureRecognizer()
+                      ..onTap = () => widget.linkParse?.call(e))
+                    : _getRecognizer(node))
                 : null,
-            // recognizer: _isLink && canLaunchLinks ? _getRecognizer(node) : null,
             mouseCursor:
                 _isLink && canLaunchLinks ? SystemMouseCursors.click : null,
           ));
