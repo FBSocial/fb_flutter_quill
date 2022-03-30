@@ -67,10 +67,12 @@ class EditableTextBlock extends StatelessWidget {
       this.customStyleBuilder,
       this.mentionBuilder,
       this.emojiBuilder,
+      this.linkParse,
       Key? key});
 
   final InlineSpan Function(Embed)? mentionBuilder;
   final InlineSpan? Function(String)? emojiBuilder;
+  final void Function(String)? linkParse;
   final Block block;
   final QuillController controller;
   final TextDirection textDirection;
@@ -141,6 +143,7 @@ class EditableTextBlock extends StatelessWidget {
             onLaunchUrl: onLaunchUrl,
             embedBuilder: embedBuilder,
             emojiBuilder: emojiBuilder,
+            linkParse: linkParse,
           ),
           _getIndentWidth(),
           _getSpacingForLine(line, index, count, defaultStyles),

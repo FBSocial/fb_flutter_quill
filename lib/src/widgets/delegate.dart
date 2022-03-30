@@ -99,7 +99,7 @@ class EditorTextSelectionGestureDetectorBuilder {
   ///  which triggers this callback.
   @protected
   void onTapDown(TapDownDetails details) {
-    renderEditor!.handleTapDown(details);
+    renderEditor?.handleTapDown(details);
     // The selection overlay should only be shown when the user is interacting
     // through a touch screen (via either a finger or a stylus).
     // A mouse shouldn't trigger the selection overlay.

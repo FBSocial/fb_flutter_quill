@@ -42,6 +42,7 @@ class TextLine extends StatefulWidget {
     // 修改，添加mentionBuilder
     this.mentionBuilder,
     this.emojiBuilder,
+    this.linkParse,
     Key? key,
   }) : super(key: key);
 
@@ -56,6 +57,7 @@ class TextLine extends StatefulWidget {
   final LinkActionPicker linkActionPicker;
   final InlineSpan Function(Embed)? mentionBuilder;
   final InlineSpan? Function(String)? emojiBuilder;
+  final void Function(String)? linkParse;
 
   @override
   State<TextLine> createState() => _TextLineState();
@@ -512,7 +514,13 @@ class _TextLineState extends State<TextLine> {
         .any((linkPrefix) => link!.toLowerCase().startsWith(linkPrefix))) {
       link = 'https://$link';
     }
-    launchUrl(link);
+
+    /// NOTE: 添加自定义外部link解析
+    if (widget.linkParse != null) {
+      widget.linkParse?.call(link);
+    } else {
+      launchUrl(link);
+    }
   }
 
   Future<void> _longPressLink(Node node) async {

@@ -78,6 +78,7 @@ class RawEditor extends StatefulWidget {
     this.mentionBuilder,
     this.emojiBuilder,
     this.pasteExtension,
+    this.linkParse,
     Key? key,
   })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
@@ -91,6 +92,9 @@ class RawEditor extends StatefulWidget {
 
   /// 表情解析器
   final InlineSpan? Function(String)? emojiBuilder;
+
+  /// 链接解析扩展
+  final void Function(String)? linkParse;
 
   // 修改，添加是否可编辑参数
   // final MouseCursor? mouseCursors;
@@ -482,6 +486,7 @@ class RawEditorState extends EditorState
           mentionBuilder: widget.mentionBuilder,
           customStyleBuilder: widget.customStyleBuilder,
           emojiBuilder: widget.emojiBuilder,
+          linkParse: widget.linkParse,
         );
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
@@ -506,6 +511,7 @@ class RawEditorState extends EditorState
       onLaunchUrl: widget.onLaunchUrl,
       mentionBuilder: widget.mentionBuilder,
       emojiBuilder: widget.emojiBuilder,
+      linkParse: widget.linkParse,
     );
     final editableTextLine = EditableTextLine(
         node,

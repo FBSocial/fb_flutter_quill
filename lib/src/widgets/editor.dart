@@ -186,6 +186,7 @@ class QuillEditor extends StatefulWidget {
       this.pasteExtension,
       this.mentionBuilder,
       this.emojiBuilder,
+        this.linkParse,
       Key? key})
       : super(key: key);
 
@@ -214,6 +215,9 @@ class QuillEditor extends StatefulWidget {
 
   /// 表情解析器
   final InlineSpan? Function(String)? emojiBuilder;
+
+  /// 链接解析扩展
+  final void Function(String)? linkParse;
 
   /// Controller object which establishes a link between a rich text document
   /// and this editor.
@@ -481,6 +485,7 @@ class QuillEditorState extends State<QuillEditor>
       mentionBuilder: widget.mentionBuilder,
       pasteExtension: widget.pasteExtension,
       emojiBuilder: widget.emojiBuilder,
+      linkParse: widget.linkParse,
     );
 
     final editor = I18n(
@@ -614,7 +619,7 @@ class _QuillEditorSelectionGestureDetectorBuilder
       return;
     }
 
-    editor!.hideToolbar();
+    editor?.hideToolbar();
 
     try {
       if (delegate.selectionEnabled && !_isPositionSelected(details)) {
