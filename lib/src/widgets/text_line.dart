@@ -374,7 +374,13 @@ class _TextLineState extends State<TextLine> {
             text: e,
             style: _getInlineTextStyle(
                 textNode, defaultStyles, nodeStyle, lineStyle, _isLink),
-            recognizer: _isLink && canLaunchLinks ? _getRecognizer(node) : null,
+
+            /// NOTE： 采用自定义的链接跳转
+            recognizer: _isLink && canLaunchLinks
+                ? (TapGestureRecognizer()
+                  ..onTap = () => widget.linkParse?.call(e))
+                : null,
+            // recognizer: _isLink && canLaunchLinks ? _getRecognizer(node) : null,
             mouseCursor:
                 _isLink && canLaunchLinks ? SystemMouseCursors.click : null,
           ));
@@ -417,6 +423,11 @@ class _TextLineState extends State<TextLine> {
         }
       }
     });
+
+    /// NOTE: 兼容没有属性的情况下的http
+    if (nodeStyle.isEmpty && isLink) {
+      res = _merge(res, defaultStyles.link!);
+    }
 
     if (nodeStyle.containsKey(Attribute.inlineCode.key)) {
       res = _merge(res, defaultStyles.inlineCode!.styleFor(lineStyle));
