@@ -66,9 +66,11 @@ class EditableTextBlock extends StatelessWidget {
       this.onLaunchUrl,
       this.customStyleBuilder,
       this.mentionBuilder,
+      this.emojiBuilder,
       Key? key});
 
   final InlineSpan Function(Embed)? mentionBuilder;
+  final InlineSpan? Function(String)? emojiBuilder;
   final Block block;
   final QuillController controller;
   final TextDirection textDirection;
@@ -131,13 +133,14 @@ class EditableTextBlock extends StatelessWidget {
           TextLine(
             line: line,
             textDirection: textDirection,
-            embedBuilder: embedBuilder,
             customStyleBuilder: customStyleBuilder,
             styles: styles!,
             readOnly: readOnly,
             controller: controller,
             linkActionPicker: linkActionPicker,
             onLaunchUrl: onLaunchUrl,
+            embedBuilder: embedBuilder,
+            emojiBuilder: emojiBuilder,
           ),
           _getIndentWidth(),
           _getSpacingForLine(line, index, count, defaultStyles),

@@ -40,7 +40,6 @@ import 'text_line.dart';
 import 'text_selection.dart';
 
 class RawEditor extends StatefulWidget {
-
   const RawEditor({
     required this.controller,
     required this.focusNode,
@@ -459,29 +458,31 @@ class RawEditorState extends EditorState
       } else if (node is Block) {
         final attrs = node.style.attributes;
         final editableTextBlock = EditableTextBlock(
-            block: node,
-            controller: widget.controller,
-            textDirection: _textDirection,
-            scrollBottomInset: widget.scrollBottomInset,
-            verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
-            textSelection: widget.controller.selection,
-            color: widget.selectionColor,
-            styles: _styles,
-            enableInteractiveSelection: widget.enableInteractiveSelection,
-            hasFocus: _hasFocus,
-            // NOTE: 2022/3/2 调整默认间距16=》8
-            contentPadding: attrs.containsKey(Attribute.codeBlock.key)
-                ? const EdgeInsets.all(8)
-                : null,
-            embedBuilder: widget.embedBuilder,
-            linkActionPicker: _linkActionPicker,
-            onLaunchUrl: widget.onLaunchUrl,
-            cursorCont: _cursorCont,
-            indentLevelCounts: indentLevelCounts,
-            onCheckboxTap: _handleCheckboxTap,
-            readOnly: widget.readOnly,
-            mentionBuilder: widget.mentionBuilder,
-            customStyleBuilder: widget.customStyleBuilder);
+          block: node,
+          controller: widget.controller,
+          textDirection: _textDirection,
+          scrollBottomInset: widget.scrollBottomInset,
+          verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
+          textSelection: widget.controller.selection,
+          color: widget.selectionColor,
+          styles: _styles,
+          enableInteractiveSelection: widget.enableInteractiveSelection,
+          hasFocus: _hasFocus,
+          // NOTE: 2022/3/2 调整默认间距16=》8
+          contentPadding: attrs.containsKey(Attribute.codeBlock.key)
+              ? const EdgeInsets.all(8)
+              : null,
+          embedBuilder: widget.embedBuilder,
+          linkActionPicker: _linkActionPicker,
+          onLaunchUrl: widget.onLaunchUrl,
+          cursorCont: _cursorCont,
+          indentLevelCounts: indentLevelCounts,
+          onCheckboxTap: _handleCheckboxTap,
+          readOnly: widget.readOnly,
+          mentionBuilder: widget.mentionBuilder,
+          customStyleBuilder: widget.customStyleBuilder,
+          emojiBuilder: widget.emojiBuilder,
+        );
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
       } else {
