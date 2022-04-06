@@ -208,7 +208,7 @@ class QuillEditor extends StatefulWidget {
     );
   }
 
-  final InlineSpan Function(leaf.Embed)? mentionBuilder;
+  final InlineSpan Function(leaf.Embed, TextStyle)? mentionBuilder;
 
   /// 粘贴图片回调
   final VoidCallback? pasteExtension;

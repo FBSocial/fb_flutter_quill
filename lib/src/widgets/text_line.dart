@@ -55,7 +55,7 @@ class TextLine extends StatefulWidget {
   final CustomStyleBuilder? customStyleBuilder;
   final ValueChanged<String>? onLaunchUrl;
   final LinkActionPicker linkActionPicker;
-  final InlineSpan Function(Embed)? mentionBuilder;
+  final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
   final InlineSpan? Function(String)? emojiBuilder;
   final void Function(String)? linkParse;
 
@@ -156,10 +156,8 @@ class _TextLineState extends State<TextLine> {
       // } else
       if (embed.value is BlockEmbed && embed.value.type == 'divider') {
         /// 修改，下划线回调
-        return EmbedProxy(
-            widget.embedBuilder(
-                context, widget.controller, embed, widget.readOnly),
-            embedSize: null);
+        return EmbedProxy(widget.embedBuilder(
+            context, widget.controller, embed, widget.readOnly));
       } else {
         return EmbedProxy(widget.embedBuilder(
             context, widget.controller, embed, widget.readOnly));
@@ -313,14 +311,26 @@ class _TextLineState extends State<TextLine> {
       DefaultStyles defaultStyles, Node node, Style lineStyle) {
     // TODO: 2022/3/2 需要业务分离TextLine与提及
     if (node is Embed) {
-      final nodeStyle = node.style;
+      var nodeStyle = node.style;
       final isMention = (nodeStyle.containsKey(Attribute.at.key) &&
               nodeStyle.attributes[Attribute.at.key]?.value != null) ||
           (nodeStyle.containsKey(Attribute.channel.key) &&
               nodeStyle.attributes[Attribute.channel.key]?.value != null);
       if (isMention && widget.mentionBuilder != null) {
         // NOTE: 2022/3/2 通过外部获取@的TextSpan
-        return widget.mentionBuilder!.call(node);
+        /// At与Channel注意适配标题
+        if (nodeStyle.containsKey(Attribute.h1.key)) {
+          nodeStyle = nodeStyle.merge(Attribute.h1);
+        } else if (nodeStyle.containsKey(Attribute.h2.key)) {
+          nodeStyle = nodeStyle.merge(Attribute.h2);
+        } else if (nodeStyle.containsKey(Attribute.h3.key)) {
+          nodeStyle = nodeStyle.merge(Attribute.h3);
+        }
+
+        return widget.mentionBuilder!.call(
+          node,
+          _getInlineTextStyle(node, defaultStyles, nodeStyle, lineStyle, true),
+        );
       }
       return TextSpan(text: node.value.toString());
     }
@@ -392,10 +402,30 @@ class _TextLineState extends State<TextLine> {
     return TextSpan(children: children);
   }
 
-  TextStyle _getInlineTextStyle(leaf.Text textNode, DefaultStyles defaultStyles,
+  TextStyle _getInlineTextStyle(Node note, DefaultStyles defaultStyles,
       Style nodeStyle, Style lineStyle, bool isLink) {
     var res = const TextStyle(); // This is inline text style
-    final color = textNode.style.attributes[Attribute.color.key];
+    final color = note.style.attributes[Attribute.color.key];
+    if ((nodeStyle.containsKey(Attribute.at.key) ||
+            nodeStyle.containsKey(Attribute.channel.key)) &&
+        lineStyle.containsKey(Attribute.header.key)) {
+      lineStyle.attributes.forEach((key, value) {
+        if (key == Attribute.header.key) {
+          if (Attribute.h1 == value && defaultStyles.h1 != null) {
+            res =
+                _merge(res, defaultStyles.h1!.style.copyWith(color: res.color));
+          }
+          if (Attribute.h2 == value && defaultStyles.h2 != null) {
+            res =
+                _merge(res, defaultStyles.h2!.style.copyWith(color: res.color));
+          }
+          if (Attribute.h3 == value && defaultStyles.h3 != null) {
+            res =
+                _merge(res, defaultStyles.h3!.style.copyWith(color: res.color));
+          }
+        }
+      });
+    }
 
     <String, TextStyle?>{
       Attribute.bold.key: defaultStyles.bold,
@@ -434,12 +464,12 @@ class _TextLineState extends State<TextLine> {
       res = _merge(res, defaultStyles.inlineCode!.styleFor(lineStyle));
     }
 
-    final font = textNode.style.attributes[Attribute.font.key];
+    final font = note.style.attributes[Attribute.font.key];
     if (font != null && font.value != null) {
       res = res.merge(TextStyle(fontFamily: font.value));
     }
 
-    final size = textNode.style.attributes[Attribute.size.key];
+    final size = note.style.attributes[Attribute.size.key];
     if (size != null && size.value != null) {
       switch (size.value) {
         case 'small':
@@ -478,13 +508,13 @@ class _TextLineState extends State<TextLine> {
       }
     }
 
-    final background = textNode.style.attributes[Attribute.background.key];
+    final background = note.style.attributes[Attribute.background.key];
     if (background != null && background.value != null) {
       final backgroundColor = stringToColor(background.value);
       res = res.merge(TextStyle(backgroundColor: backgroundColor));
     }
 
-    res = _applyCustomAttributes(res, textNode.style.attributes);
+    res = _applyCustomAttributes(res, note.style.attributes);
     return res;
   }
 

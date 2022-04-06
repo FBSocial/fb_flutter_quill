@@ -70,7 +70,7 @@ class EditableTextBlock extends StatelessWidget {
       this.linkParse,
       Key? key});
 
-  final InlineSpan Function(Embed)? mentionBuilder;
+  final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
   final InlineSpan? Function(String)? emojiBuilder;
   final void Function(String)? linkParse;
   final Block block;

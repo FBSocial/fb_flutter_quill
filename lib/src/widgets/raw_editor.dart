@@ -88,7 +88,7 @@ class RawEditor extends StatefulWidget {
         super(key: key);
 
   // 修改，添加mention builder
-  final InlineSpan Function(Embed)? mentionBuilder;
+  final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
 
   /// 表情解析器
   final InlineSpan? Function(String)? emojiBuilder;
