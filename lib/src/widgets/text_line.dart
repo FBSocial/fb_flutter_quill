@@ -310,26 +310,13 @@ class _TextLineState extends State<TextLine> {
   InlineSpan _getTextSpanFromNode(
       DefaultStyles defaultStyles, Node node, Style lineStyle) {
     // TODO: 2022/3/2 需要业务分离TextLine与提及
-    if (node is Embed) {
-      var nodeStyle = node.style;
-      final isMention = (nodeStyle.containsKey(Attribute.at.key) &&
-              nodeStyle.attributes[Attribute.at.key]?.value != null) ||
-          (nodeStyle.containsKey(Attribute.channel.key) &&
-              nodeStyle.attributes[Attribute.channel.key]?.value != null);
-      if (isMention && widget.mentionBuilder != null) {
+    if (node is Embed && node.value is MentionEmbed) {
+      final nodeStyle = node.style;
+      if (widget.mentionBuilder != null) {
         // NOTE: 2022/3/2 通过外部获取@的TextSpan
-        /// At与Channel注意适配标题
-        if (nodeStyle.containsKey(Attribute.h1.key)) {
-          nodeStyle = nodeStyle.merge(Attribute.h1);
-        } else if (nodeStyle.containsKey(Attribute.h2.key)) {
-          nodeStyle = nodeStyle.merge(Attribute.h2);
-        } else if (nodeStyle.containsKey(Attribute.h3.key)) {
-          nodeStyle = nodeStyle.merge(Attribute.h3);
-        }
-
         return widget.mentionBuilder!.call(
           node,
-          _getInlineTextStyle(node, defaultStyles, nodeStyle, lineStyle, true),
+          _getInlineTextStyle(node, defaultStyles, nodeStyle, lineStyle, false),
         );
       }
       return TextSpan(text: node.value.toString());
@@ -404,10 +391,12 @@ class _TextLineState extends State<TextLine> {
 
   TextStyle _getInlineTextStyle(Node note, DefaultStyles defaultStyles,
       Style nodeStyle, Style lineStyle, bool isLink) {
-    var res = const TextStyle(); // This is inline text style
-    final color = note.style.attributes[Attribute.color.key];
-    if ((nodeStyle.containsKey(Attribute.at.key) ||
-            nodeStyle.containsKey(Attribute.channel.key)) &&
+    // This is inline text style
+    var res = const TextStyle();
+
+    /// 添加MentionEmbed H1的处理
+    if (note is Embed &&
+        note.value is MentionEmbed &&
         lineStyle.containsKey(Attribute.header.key)) {
       lineStyle.attributes.forEach((key, value) {
         if (key == Attribute.header.key) {
@@ -427,6 +416,7 @@ class _TextLineState extends State<TextLine> {
       });
     }
 
+    final color = note.style.attributes[Attribute.color.key];
     <String, TextStyle?>{
       Attribute.bold.key: defaultStyles.bold,
       Attribute.italic.key: defaultStyles.italic,
