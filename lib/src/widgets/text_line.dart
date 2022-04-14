@@ -352,8 +352,7 @@ class _TextLineState extends State<TextLine> {
         if (e[0] == '[' && e[e.length - 1] == ']') {
           var child;
           final emojiName = e.substring(1, e.length - 1);
-          // TODO: 2022/3/2 需要外部传入Builder显示图标
-          if (/*widget.readOnly &&*/ widget.emojiBuilder != null) {
+          if (widget.emojiBuilder != null) {
             child = widget.emojiBuilder!.call(emojiName);
           }
           if (child != null) {
