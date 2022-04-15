@@ -262,6 +262,9 @@ class RawEditorState extends EditorState
   StreamSubscription<bool>? _keyboardVisibilitySubscription;
   bool _keyboardVisible = false;
 
+  /// 点击激活
+  bool _isClickActivation = false;
+
   // Selection overlay
   @override
   EditorTextSelectionOverlay? get selectionOverlay => _selectionOverlay;
@@ -314,6 +317,9 @@ class RawEditorState extends EditorState
     Widget child = CompositedTransformTarget(
       link: _toolbarLayerLink,
       child: Semantics(
+        // onCopy: _semanticsOnCopy(controls),
+        // onCut: _semanticsOnCut(controls),
+        // onPaste: _semanticsOnPaste(controls),
         child: _Editor(
           key: _editorKey,
           document: _doc,
@@ -406,11 +412,11 @@ class RawEditorState extends EditorState
 
     _selectionOverlay?.handlesVisible = _shouldShowSelectionHandles();
 
-    if (!_keyboardVisible) {
-      // This will show the keyboard for all selection changes on the
-      // editor, not just changes triggered by user gestures.
-      requestKeyboard();
-    }
+    // This will show the keyboard for all selection changes on the
+    // editor, not just changes triggered by user gestures.
+    requestKeyboard();
+    _isClickActivation = true;
+    _updateOrDisposeSelectionOverlayIfNeeded();
 
     if (cause == SelectionChangedCause.drag) {
       // When user updates the selection while dragging make sure to
@@ -768,7 +774,7 @@ class RawEditorState extends EditorState
       } else if (!textEditingValue.selection.isCollapsed) {
         _selectionOverlay!.update(textEditingValue);
       }
-    } else if (_hasFocus) {
+    } else if (_hasFocus || _isClickActivation) {
       _selectionOverlay = EditorTextSelectionOverlay(
         value: textEditingValue,
         context: context,
@@ -784,6 +790,8 @@ class RawEditorState extends EditorState
       _selectionOverlay!.handlesVisible = _shouldShowSelectionHandles();
       _selectionOverlay!.showHandles();
     }
+
+    _isClickActivation = false;
   }
 
   void _handleFocusChanged() {

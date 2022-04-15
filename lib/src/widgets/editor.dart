@@ -187,7 +187,7 @@ class QuillEditor extends StatefulWidget {
     this.mentionBuilder,
     this.emojiBuilder,
     this.linkParse,
-    this.rightMenu,
+    // this.onContextMenu,
     Key? key,
   }) : super(key: key);
 
@@ -220,8 +220,8 @@ class QuillEditor extends StatefulWidget {
   /// 链接解析扩展
   final void Function(String)? linkParse;
 
-  /// 右键事件响应
-  final void Function()? rightMenu;
+  /// 鼠标点击事件事件响应
+  // final PointerDownEventListener? onContextMenu;
 
   /// Controller object which establishes a link between a rich text document
   /// and this editor.
@@ -434,6 +434,13 @@ class QuillEditorState extends State<QuillEditor>
       cursorRadius ??= const Radius.circular(2);
       cursorOffset = Offset(
           iOSHorizontalOffset / MediaQuery.of(context).devicePixelRatio, 0);
+    } else if (isDesktop(theme.platform)) {
+      textSelectionControls = desktopTextSelectionControls;
+      paintCursorAboveText = false;
+      cursorOpacityAnimates = false;
+      cursorColor ??= selectionTheme.cursorColor ?? theme.colorScheme.primary;
+      selectionColor = selectionTheme.selectionColor ??
+          theme.colorScheme.primary.withOpacity(0.40);
     } else {
       textSelectionControls = materialTextSelectionControls;
       paintCursorAboveText = false;
@@ -514,16 +521,14 @@ class QuillEditorState extends State<QuillEditor>
       );
     }
 
-    if (isDesktop()) {
-      return Listener(
-        onPointerDown: (e) {
-          if (e.kind == PointerDeviceKind.mouse && e.buttons == 2) {
-            widget.rightMenu?.call();
-          }
-        },
-        child: editor,
-      );
-    }
+    // if (isDesktop()) {
+    //   return Listener(
+    //     onPointerDown: (e) {
+    //       widget.onContextMenu?.call(e);
+    //     },
+    //     child: editor,
+    //   );
+    // }
     return editor;
   }
 
@@ -759,7 +764,7 @@ class RenderEditor extends RenderEditableContainerBox
     required this.document,
     required TextDirection textDirection,
     required bool hasFocus,
-    required this.selection,
+    required TextSelection selection,
     required this.scrollable,
     required LayerLink startHandleLayerLink,
     required LayerLink endHandleLayerLink,
@@ -776,6 +781,7 @@ class RenderEditor extends RenderEditableContainerBox
     double? maxContentWidth,
   })  : _hasFocus = hasFocus,
         _extendSelectionOrigin = selection,
+        _selection = selection,
         _startHandleLayerLink = startHandleLayerLink,
         _endHandleLayerLink = endHandleLayerLink,
         _cursorController = cursorController,
@@ -793,7 +799,23 @@ class RenderEditor extends RenderEditableContainerBox
   final bool scrollable;
 
   Document document;
-  TextSelection selection;
+
+  /// The region of text that is selected, if any.
+  ///
+  /// The caret position is represented by a collapsed selection.
+  ///
+  /// If [selection] is null, there is no selection and attempts to
+  /// manipulate the selection will throw.
+  TextSelection get selection => _selection;
+  TextSelection _selection;
+
+  set selection(TextSelection value) {
+    if (_selection == value) return;
+    _selection = value;
+    markNeedsPaint();
+    markNeedsSemanticsUpdate();
+  }
+
   bool _hasFocus = false;
   LayerLink _startHandleLayerLink;
   LayerLink _endHandleLayerLink;
@@ -982,6 +1004,20 @@ class RenderEditor extends RenderEditableContainerBox
   }
 
   Offset? _lastTapDownPosition;
+  Offset? _lastSecondaryTapDownPosition;
+
+  /// The position of the most recent secondary tap down event on this text
+  /// input.
+  Offset? get lastSecondaryTapDownPosition => _lastSecondaryTapDownPosition;
+
+  /// Tracks the position of a secondary tap event.
+  ///
+  /// Should be called before attempting to change the selection based on the
+  /// position of a secondary tap.
+  void handleSecondaryTapDown(TapDownDetails details) {
+    _lastTapDownPosition = details.globalPosition;
+    _lastSecondaryTapDownPosition = details.globalPosition;
+  }
 
   // Used on Desktop (mouse and keyboard enabled platforms) as base offset
   // for extending selection, either with combination of `Shift` + Click or

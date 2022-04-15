@@ -70,6 +70,21 @@ class EditorTextSelectionGestureDetectorBuilder {
   @protected
   final EditorTextSelectionGestureDetectorBuilderDelegate delegate;
 
+  /// Returns true if lastSecondaryTapDownPosition was on selection.
+  bool get _lastSecondaryTapWasOnSelection {
+    assert(renderEditor!.lastSecondaryTapDownPosition != null);
+    // if (renderEditor!.selection == null) {
+    //   return false;
+    // }
+
+    final textPosition = renderEditor!.getPositionForOffset(
+      renderEditor!.lastSecondaryTapDownPosition!,
+    );
+
+    return renderEditor!.selection.start <= textPosition.offset &&
+        renderEditor!.selection.end >= textPosition.offset;
+  }
+
   /// Whether to show the selection toolbar.
   ///
   /// It is based on the signal source when a [onTapDown] is called. This getter
@@ -156,6 +171,36 @@ class EditorTextSelectionGestureDetectorBuilder {
     if (shouldShowSelectionToolbar) {
       editor!.showToolbar();
     }
+  }
+
+  /// Handler for [TextSelectionGestureDetector.onSecondaryTap].
+  ///
+  /// By default, selects the word if possible and shows the toolbar.
+  @protected
+  void onSecondaryTap() {
+    if (delegate.selectionEnabled) {
+      if (!_lastSecondaryTapWasOnSelection) {
+        renderEditor!.selectWord(SelectionChangedCause.tap);
+      }
+
+      if (shouldShowSelectionToolbar) {
+        editor!.hideToolbar();
+        editor!.showToolbar();
+      }
+    }
+  }
+
+  /// Handler for [TextSelectionGestureDetector.onSecondaryTapDown].
+  ///
+  /// See also:
+  ///
+  ///  * [TextSelectionGestureDetector.onSecondaryTapDown], which triggers this
+  ///    callback.
+  ///  * [onSecondaryTap], which is typically called after this.
+  @protected
+  void onSecondaryTapDown(TapDownDetails details) {
+    renderEditor!.handleSecondaryTapDown(details);
+    shouldShowSelectionToolbar = true;
   }
 
   /// Handler for [EditorTextSelectionGestureDetector.onSingleTapUp].
@@ -269,6 +314,9 @@ class EditorTextSelectionGestureDetectorBuilder {
   @protected
   void onDragSelectionStart(DragStartDetails details) {
     renderEditor!.handleDragStart(details);
+    if (shouldShowSelectionToolbar) {
+      editor!.hideToolbar();
+    }
   }
 
   /// Handler for [EditorTextSelectionGestureDetector.onDragSelectionUpdate].
@@ -311,6 +359,8 @@ class EditorTextSelectionGestureDetectorBuilder {
       onTapDown: onTapDown,
       onForcePressStart: delegate.forcePressEnabled ? onForcePressStart : null,
       onForcePressEnd: delegate.forcePressEnabled ? onForcePressEnd : null,
+      onSecondaryTap: onSecondaryTap,
+      onSecondaryTapDown: onSecondaryTapDown,
       onSingleTapUp: onSingleTapUp,
       onSingleTapCancel: onSingleTapCancel,
       onSingleLongTapStart: onSingleLongTapStart,
