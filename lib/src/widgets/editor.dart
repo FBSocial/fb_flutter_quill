@@ -187,7 +187,7 @@ class QuillEditor extends StatefulWidget {
     this.mentionBuilder,
     this.emojiBuilder,
     this.linkParse,
-    // this.onContextMenu,
+    this.selectionControls,
     Key? key,
   }) : super(key: key);
 
@@ -220,8 +220,8 @@ class QuillEditor extends StatefulWidget {
   /// 链接解析扩展
   final void Function(String)? linkParse;
 
-  /// 鼠标点击事件事件响应
-  // final PointerDownEventListener? onContextMenu;
+  /// 自定义选择
+  final TextSelectionControls? selectionControls;
 
   /// Controller object which establishes a link between a rich text document
   /// and this editor.
@@ -415,7 +415,7 @@ class QuillEditorState extends State<QuillEditor>
     final theme = Theme.of(context);
     final selectionTheme = TextSelectionTheme.of(context);
 
-    TextSelectionControls textSelectionControls;
+    var textSelectionControls = widget.selectionControls;
     bool paintCursorAboveText;
     bool cursorOpacityAnimates;
     Offset? cursorOffset;
@@ -425,7 +425,7 @@ class QuillEditorState extends State<QuillEditor>
 
     if (isAppleOS(theme.platform)) {
       final cupertinoTheme = CupertinoTheme.of(context);
-      textSelectionControls = cupertinoTextSelectionControls;
+      textSelectionControls ??= cupertinoTextSelectionControls;
       paintCursorAboveText = true;
       cursorOpacityAnimates = true;
       cursorColor ??= selectionTheme.cursorColor ?? cupertinoTheme.primaryColor;
@@ -435,14 +435,14 @@ class QuillEditorState extends State<QuillEditor>
       cursorOffset = Offset(
           iOSHorizontalOffset / MediaQuery.of(context).devicePixelRatio, 0);
     } else if (isDesktop(theme.platform)) {
-      textSelectionControls = desktopTextSelectionControls;
+      textSelectionControls ??= desktopTextSelectionControls;
       paintCursorAboveText = false;
       cursorOpacityAnimates = false;
       cursorColor ??= selectionTheme.cursorColor ?? theme.colorScheme.primary;
       selectionColor = selectionTheme.selectionColor ??
           theme.colorScheme.primary.withOpacity(0.40);
     } else {
-      textSelectionControls = materialTextSelectionControls;
+      textSelectionControls ??= materialTextSelectionControls;
       paintCursorAboveText = false;
       cursorOpacityAnimates = false;
       cursorColor ??= selectionTheme.cursorColor ?? theme.colorScheme.primary;
@@ -520,15 +520,6 @@ class QuillEditorState extends State<QuillEditor>
         child: editor,
       );
     }
-
-    // if (isDesktop()) {
-    //   return Listener(
-    //     onPointerDown: (e) {
-    //       widget.onContextMenu?.call(e);
-    //     },
-    //     child: editor,
-    //   );
-    // }
     return editor;
   }
 

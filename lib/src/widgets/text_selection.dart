@@ -307,6 +307,8 @@ class EditorTextSelectionOverlay {
   }
 
   Widget _buildToolbar(BuildContext context) {
+    // if (selectionCtrls == null) return Container();
+
     // Find the horizontal midpoint, just above the selected text.
     final endpoints = renderObject.getEndpointsForSelection(_selection);
 
