@@ -846,27 +846,33 @@ class RawEditorState extends EditorState
           return;
         }
 
-        final viewport = RenderAbstractViewport.of(renderEditor);
-        final editorOffset =
-            renderEditor.localToGlobal(const Offset(0, 0), ancestor: viewport);
-        final offsetInViewport = _scrollController.offset + editorOffset.dy;
+        try {
+          final viewport = RenderAbstractViewport.of(renderEditor);
 
-        final offset = renderEditor.getOffsetToRevealCursor(
-          _scrollController.position.viewportDimension,
-          _scrollController.offset,
-          offsetInViewport,
-        );
+          /// FIXME： renderEditor.localToGlobal会出现异常
+          final editorOffset = renderEditor.localToGlobal(const Offset(0, 0),
+              ancestor: viewport);
+          final offsetInViewport = _scrollController.offset + editorOffset.dy;
 
-        if (offset != null) {
-          if (_disableScrollControllerAnimateOnce) {
-            _disableScrollControllerAnimateOnce = false;
-            return;
-          }
-          _scrollController.animateTo(
-            math.min(offset, _scrollController.position.maxScrollExtent),
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.fastOutSlowIn,
+          final offset = renderEditor.getOffsetToRevealCursor(
+            _scrollController.position.viewportDimension,
+            _scrollController.offset,
+            offsetInViewport,
           );
+
+          if (offset != null) {
+            if (_disableScrollControllerAnimateOnce) {
+              _disableScrollControllerAnimateOnce = false;
+              return;
+            }
+            _scrollController.animateTo(
+              math.min(offset, _scrollController.position.maxScrollExtent),
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.fastOutSlowIn,
+            );
+          }
+        } catch (e) {
+          debugPrint('显示光标出现错误: ${e.toString()}');
         }
       }
     });
