@@ -70,7 +70,7 @@ abstract class RenderAbstractEditor implements TextLayoutMetrics {
   ///
   /// Returns null if [TextRange.isValid] is false for the given `range`, or the
   /// given `range` is collapsed.
-  Rect getRectForComposingRange(TextRange range);
+  Rect? getRectForComposingRange(TextRange range);
 
   /// Returns the local coordinates of the endpoints of the given selection.
   ///
@@ -1393,7 +1393,9 @@ class RenderEditor extends RenderEditableContainerBox
   }
 
   @override
-  Rect getRectForComposingRange(TextRange range) {
+  Rect? getRectForComposingRange(TextRange range) {
+    if (!range.isValid || range.isCollapsed) return null;
+
     final endPosition =
         TextPosition(offset: selection.end, affinity: selection.affinity);
     final endOffset = _getOffsetForCaret(endPosition);

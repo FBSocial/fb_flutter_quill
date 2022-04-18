@@ -11,7 +11,7 @@ import '../../utils/delta.dart';
 import '../editor.dart';
 
 mixin RawEditorStateTextInputClientMixin on EditorState
-implements TextInputClient {
+    implements TextInputClient {
   TextInputConnection? _textInputConnection;
   TextEditingValue? _lastKnownRemoteTextEditingValue;
 
@@ -40,9 +40,9 @@ implements TextInputClient {
     if (widget.focusNode.hasFocus && widget.focusNode.consumeKeyboardToken()) {
       openConnectionIfNeeded();
     } else if (!widget.focusNode.hasFocus) {
-      // widget.controller.clear();
-      const newSelection = TextSelection.collapsed(offset: 0);
-      widget.controller.updateSelection(newSelection, ChangeSource.LOCAL);
+      /// FIXME: 弹窗会导致焦点失去，在此处进行
+      // const newSelection = TextSelection.collapsed(offset: 0);
+      // widget.controller.updateSelection(newSelection, ChangeSource.LOCAL);
       closeConnectionIfNeeded();
     }
   }
@@ -218,7 +218,7 @@ implements TextInputClient {
         _pointOffsetOrigin = point.offset;
 
         final currentTextPosition =
-        TextPosition(offset: renderEditor.selection.baseOffset);
+            TextPosition(offset: renderEditor.selection.baseOffset);
         _startCaretRect =
             renderEditor.getLocalRectForCaret(currentTextPosition);
 
@@ -236,7 +236,7 @@ implements TextInputClient {
             _startCaretRect!.center + centeredPoint - floatingCursorOffset;
 
         final preferredLineHeight =
-        renderEditor.preferredLineHeight(_lastTextPosition!);
+            renderEditor.preferredLineHeight(_lastTextPosition!);
         _lastBoundedOffset = renderEditor.calculateBoundedFloatingCursorOffset(
           rawCursorOffset,
           preferredLineHeight,
@@ -254,7 +254,7 @@ implements TextInputClient {
             newSelection, SelectionChangedCause.forcePress);
         break;
       case FloatingCursorDragState.End:
-      // We skip animation if no update has happened.
+        // We skip animation if no update has happened.
         if (_lastTextPosition != null && _lastBoundedOffset != null) {
           floatingCursorResetController
             ..value = 0.0
@@ -273,9 +273,7 @@ implements TextInputClient {
   /// and current position of background cursor)
   void onFloatingCursorResetTick() {
     final finalPosition =
-        renderEditor
-            .getLocalRectForCaret(_lastTextPosition!)
-            .centerLeft -
+        renderEditor.getLocalRectForCaret(_lastTextPosition!).centerLeft -
             _floatingCursorOffset(_lastTextPosition!);
     if (floatingCursorResetController.isCompleted) {
       renderEditor.setFloatingCursor(
@@ -287,9 +285,9 @@ implements TextInputClient {
     } else {
       final lerpValue = floatingCursorResetController.value;
       final lerpX =
-      lerpDouble(_lastBoundedOffset!.dx, finalPosition.dx, lerpValue)!;
+          lerpDouble(_lastBoundedOffset!.dx, finalPosition.dx, lerpValue)!;
       final lerpY =
-      lerpDouble(_lastBoundedOffset!.dy, finalPosition.dy, lerpValue)!;
+          lerpDouble(_lastBoundedOffset!.dy, finalPosition.dy, lerpValue)!;
 
       renderEditor.setFloatingCursor(FloatingCursorDragState.Update,
           Offset(lerpX, lerpY), _lastTextPosition!,
@@ -307,7 +305,7 @@ implements TextInputClient {
     if (!hasConnection) {
       return;
     }
-    _textInputConnection!.connectionClosedReceived();
+    _textInputConnection?.connectionClosedReceived();
     _textInputConnection = null;
     _lastKnownRemoteTextEditingValue = null;
   }
@@ -346,10 +344,10 @@ implements TextInputClient {
         composingRect =
             renderEditor.getLocalRectForCaret(TextPosition(offset: offset));
       }
-      _textInputConnection!.setComposingRect(composingRect);
+      _textInputConnection?.setComposingRect(composingRect);
 
-      SchedulerBinding.instance!
-          .addPostFrameCallback((_) => _updateComposingRectIfNeeded());
+      SchedulerBinding.instance
+          ?.addPostFrameCallback((_) => _updateComposingRectIfNeeded());
     }
   }
 
@@ -361,14 +359,14 @@ implements TextInputClient {
       if (renderEditor.selection.isValid &&
           renderEditor.selection.isCollapsed) {
         final currentTextPosition =
-        TextPosition(offset: renderEditor.selection.baseOffset);
+            TextPosition(offset: renderEditor.selection.baseOffset);
         final caretRect =
-        renderEditor.getLocalRectForCaret(currentTextPosition);
-        _textInputConnection!.setCaretRect(caretRect);
+            renderEditor.getLocalRectForCaret(currentTextPosition);
+        _textInputConnection?.setCaretRect(caretRect);
       }
 
-      SchedulerBinding.instance!
-          .addPostFrameCallback((_) => _updateCaretRectIfNeeded());
+      SchedulerBinding.instance
+          ?.addPostFrameCallback((_) => _updateCaretRectIfNeeded());
     }
   }
 }

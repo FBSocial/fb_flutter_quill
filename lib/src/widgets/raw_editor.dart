@@ -800,10 +800,10 @@ class RawEditorState extends EditorState
         _hasFocus, widget.controller.selection);
     _updateOrDisposeSelectionOverlayIfNeeded();
     if (_hasFocus) {
-      WidgetsBinding.instance!.addObserver(this);
+      WidgetsBinding.instance?.addObserver(this);
       _showCaretOnScreen();
     } else {
-      WidgetsBinding.instance!.removeObserver(this);
+      WidgetsBinding.instance?.removeObserver(this);
     }
     // 修改，修复编辑器focus后selection不变的情况下光标丢失问题
     // setState(() {});
