@@ -942,7 +942,7 @@ class RawEditorState extends EditorState
 
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
-      hideToolbar(false);
+      hideToolbar();
 
       if (!Platform.isIOS) {
         // Collapse the selection and hide the toolbar and handles.
@@ -1026,6 +1026,16 @@ class RawEditorState extends EditorState
       bringIntoView(textEditingValue.selection.extent);
       hideToolbar();
     }
+
+    /// 复制后默认选择最后一个
+    userUpdateTextEditingValue(
+      textEditingValue.copyWith(
+        selection: TextSelection(
+            baseOffset: textEditingValue.text.length,
+            extentOffset: textEditingValue.text.length),
+      ),
+      cause,
+    );
   }
 
   /// Select the entire text value.
@@ -1041,6 +1051,7 @@ class RawEditorState extends EditorState
 
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
+      hideToolbar();
     }
   }
 
