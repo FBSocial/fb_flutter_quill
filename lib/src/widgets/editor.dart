@@ -1394,7 +1394,8 @@ class RenderEditor extends RenderEditableContainerBox
 
   @override
   Rect? getRectForComposingRange(TextRange range) {
-    if (!range.isValid || range.isCollapsed) return null;
+    /// 增加判断会导致IME定位异常
+    // if (!range.isValid || range.isCollapsed) return null;
 
     final endPosition =
         TextPosition(offset: selection.end, affinity: selection.affinity);
