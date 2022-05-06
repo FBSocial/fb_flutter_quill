@@ -1029,7 +1029,9 @@ class RawEditorState extends EditorState
         ReplaceTextIntent(textEditingValue, data.text!, selection, cause));
 
     if (cause == SelectionChangedCause.toolbar) {
-      bringIntoView(textEditingValue.selection.extent);
+      try {
+        bringIntoView(textEditingValue.selection.extent);
+      } catch (_) {}
       hideToolbar();
     }
 
@@ -1037,8 +1039,8 @@ class RawEditorState extends EditorState
     userUpdateTextEditingValue(
       textEditingValue.copyWith(
         selection: TextSelection(
-            baseOffset: textEditingValue.text.length,
-            extentOffset: textEditingValue.text.length),
+            baseOffset: textEditingValue.selection.end,
+            extentOffset: textEditingValue.selection.end),
       ),
       cause,
     );
