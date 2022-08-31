@@ -1188,6 +1188,12 @@ class RawEditorState extends EditorState
     PasteTextIntent: _makeOverridable(CallbackAction<PasteTextIntent>(
         onInvoke: (intent) => pasteText(intent.cause))),
   };
+
+  @override
+  void insertTextPlaceholder(Size size) {}
+
+  @override
+  void removeTextPlaceholder() {}
 }
 
 class _Editor extends MultiChildRenderObjectWidget {
