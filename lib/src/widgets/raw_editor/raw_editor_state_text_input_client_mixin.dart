@@ -14,6 +14,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
     implements TextInputClient {
   TextInputConnection? _textInputConnection;
   TextEditingValue? _lastKnownRemoteTextEditingValue;
+  double _composingX = 0; //输入法选词弹窗x坐标
 
   /// Whether to create an input connection with the platform for text editing
   /// or not.
@@ -338,25 +339,32 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       if (!mounted) {
         return;
       }
-      Rect? composingRect = renderEditor.getRectForComposingRange(composingRange);
+      Rect? composingRect =
+          renderEditor.getRectForComposingRange(composingRange);
       // Send the caret location instead if there's no marked text yet.
       if (composingRect == null) {
         assert(!composingRange.isValid || composingRange.isCollapsed);
         final offset = composingRange.isValid ? composingRange.start : 0;
         composingRect =
             renderEditor.getLocalRectForCaret(TextPosition(offset: offset));
-      } else if(Platform.isWindows ) {
+      } else if (Platform.isWindows) {
         //print('composingRect ======== x:${composingRect?.left} y:${composingRect?.top} w:${composingRect?.width} h:${composingRect?.height}');
         //升级到flutter3.3.8后, 在windows平台renderEditor.getRectForComposingRange函数内部的_paintOffset值一直为(0,0)
-        //输入法弹窗位置x坐标一直是0, 使用caretRect来计算和更新输入法弹窗位置
-        final currentTextPosition = TextPosition(offset: renderEditor.selection.baseOffset);
-        final caretRect = renderEditor.getLocalRectForCaret(currentTextPosition);
+        //返回出来的composingRect的x一直是0, 那么输入法选词弹窗的x坐标就要偏移到composingRect的右边
+        if (_lastKnownRemoteTextEditingValue?.composing?.isCollapsed ?? false) {
+          //x坐标在落下光标且打字输入开始前记录位置,然后正在打字时不跟随预输入文字块光标跳动，保持在开始输入的位置
+          _composingX = composingRect?.right ?? 0;
+        }
+        final currentTextPosition =
+            TextPosition(offset: renderEditor.selection.baseOffset);
+        final caretRect =
+            renderEditor.getLocalRectForCaret(currentTextPosition);
         //print('caretRect ======== x:${caretRect.left} y:${caretRect.top} w:${caretRect.width} h:${caretRect.height}');
-         composingRect = Rect.fromLTWH(
-             caretRect.left,
-             caretRect.height,
-             composingRect?.width?? 0,
-             composingRect?.height?? 0);
+        //弹窗的y坐标粗略计算：[文字块顶部top + 预输入文字的高度] => 就是在预输入文字块的下方
+        double composingY = composingRect?.top ?? 0;
+        composingY += caretRect.height;
+        composingRect = Rect.fromLTWH(_composingX, composingY,
+            composingRect?.width ?? 0, composingRect?.height ?? 0);
       }
       _textInputConnection?.setComposingRect(composingRect);
 
