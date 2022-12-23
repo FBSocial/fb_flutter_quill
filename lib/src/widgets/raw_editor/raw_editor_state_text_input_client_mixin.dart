@@ -152,11 +152,13 @@ mixin RawEditorStateTextInputClientMixin on EditorState
 
     // pc端中文组合输入法,过程中回调可能会导致富文本数据和光标位置异常,所以将中间组合过程忽略掉,
     // 只取最后结果
+    /* 加了这段逻辑会影响系统emoji的预输入状态，所以暂时注释了
     if (Platform.isWindows || Platform.isMacOS) {
       if (!value.composing.isCollapsed) {
         return;
       }
     }
+    */
 
     final effectiveLastKnownValue = _lastKnownRemoteTextEditingValue!;
     _lastKnownRemoteTextEditingValue = value;
@@ -336,13 +338,25 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       if (!mounted) {
         return;
       }
-      var composingRect = renderEditor.getRectForComposingRange(composingRange);
+      Rect? composingRect = renderEditor.getRectForComposingRange(composingRange);
       // Send the caret location instead if there's no marked text yet.
       if (composingRect == null) {
         assert(!composingRange.isValid || composingRange.isCollapsed);
         final offset = composingRange.isValid ? composingRange.start : 0;
         composingRect =
             renderEditor.getLocalRectForCaret(TextPosition(offset: offset));
+      } else if(Platform.isWindows ) {
+        //print('composingRect ======== x:${composingRect?.left} y:${composingRect?.top} w:${composingRect?.width} h:${composingRect?.height}');
+        //升级到flutter3.3.8后, 在windows平台renderEditor.getRectForComposingRange函数内部的_paintOffset值一直为(0,0)
+        //输入法弹窗位置x坐标一直是0, 使用caretRect来计算和更新输入法弹窗位置
+        final currentTextPosition = TextPosition(offset: renderEditor.selection.baseOffset);
+        final caretRect = renderEditor.getLocalRectForCaret(currentTextPosition);
+        //print('caretRect ======== x:${caretRect.left} y:${caretRect.top} w:${caretRect.width} h:${caretRect.height}');
+         composingRect = Rect.fromLTWH(
+             caretRect.left,
+             caretRect.height,
+             composingRect?.width?? 0,
+             composingRect?.height?? 0);
       }
       _textInputConnection?.setComposingRect(composingRect);
 
