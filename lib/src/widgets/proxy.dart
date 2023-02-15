@@ -65,6 +65,7 @@ class RenderBaselineProxy extends RenderProxyBox {
   @override
   double computeDistanceToActualBaseline(TextBaseline baseline) =>
       _prototypePainter.computeDistanceToActualBaseline(baseline);
+
   // SEE What happens + _padding?.top;
 
   @override
@@ -75,28 +76,42 @@ class RenderBaselineProxy extends RenderProxyBox {
 }
 
 class EmbedProxy extends SingleChildRenderObjectWidget {
-  const EmbedProxy(Widget child) : super(child: child);
+  const EmbedProxy(Widget child, {this.embedSize}) : super(child: child);
+
+  // 修改，添加embedSize参数，保存图片宽高
+  final Size? embedSize;
 
   @override
   RenderEmbedProxy createRenderObject(BuildContext context) =>
-      RenderEmbedProxy(null);
+      RenderEmbedProxy(null, embedSize: embedSize);
 }
 
 class RenderEmbedProxy extends RenderProxyBox implements RenderContentProxyBox {
-  RenderEmbedProxy(RenderBox? child) : super(child);
+  RenderEmbedProxy(RenderBox? child, {this.embedSize}) : super(child);
+
+  /// 添加embedSize参数，有此参数则优先作为渲染宽高
+  final Size? embedSize;
+
+  double get width => embedSize == null
+      ? size.width
+      : getImageSize(embedSize!.width, embedSize!.height);
+
+  double get height => embedSize == null
+      ? size.height
+      : getImageSize(embedSize!.width, embedSize!.height);
 
   @override
   List<TextBox> getBoxesForSelection(TextSelection selection) {
     if (!selection.isCollapsed) {
       return <TextBox>[
-        TextBox.fromLTRBD(0, 0, size.width, size.height, TextDirection.ltr)
+        TextBox.fromLTRBD(0, 0, width, height, TextDirection.ltr)
       ];
     }
 
-    final left = selection.extentOffset == 0 ? 0.0 : size.width;
-    final right = selection.extentOffset == 0 ? 0.0 : size.width;
+    final left = selection.extentOffset == 0 ? 0.0 : width;
+    final right = selection.extentOffset == 0 ? 0.0 : width;
     return <TextBox>[
-      TextBox.fromLTRBD(left, 0, right, size.height, TextDirection.ltr)
+      TextBox.fromLTRBD(left, 0, right, height, TextDirection.ltr)
     ];
   }
 
@@ -114,7 +129,7 @@ class RenderEmbedProxy extends RenderProxyBox implements RenderContentProxyBox {
 
   @override
   TextPosition getPositionForOffset(Offset offset) =>
-      TextPosition(offset: offset.dx > size.width / 2 ? 1 : 0);
+      TextPosition(offset: offset.dx > width / 2 ? 1 : 0);
 
   @override
   TextRange getWordBoundary(TextPosition position) =>
@@ -122,6 +137,39 @@ class RenderEmbedProxy extends RenderProxyBox implements RenderContentProxyBox {
 
   @override
   double get preferredLineHeight => size.height;
+
+  double getImageSize(num _width, num _height,
+      {BoxFit? defaultFit, double? maxSizeConstraint}) {
+    return 0;
+
+    // maxSizeConstraint ??= maxMediaWidth;
+    // // todo 120 or minSizeConstraint?
+    // var width = _width ?? 120;
+    // width = width > 0 ? width : 120;
+    // var height = _height ?? maxSizeConstraint;
+    // height = height > 0 ? height : maxSizeConstraint;
+    // BoxFit fit = defaultFit ?? BoxFit.contain;
+    // if (width / height > (maxSizeConstraint / minSizeConstraint)) {
+    //   // 横线长图
+    //   width = maxSizeConstraint;
+    //   height = minSizeConstraint;
+    //   fit = BoxFit.fitHeight;
+    // } else if (height / width > (maxSizeConstraint / minSizeConstraint)) {
+    //   // 纵向长图
+    //   width = minSizeConstraint;
+    //   height = maxSizeConstraint;
+    //   fit = BoxFit.fitWidth;
+    // } else if (width > maxSizeConstraint || height > maxSizeConstraint) {
+    //   final s = min(maxSizeConstraint / width, maxSizeConstraint / height);
+    //   width = _width * s;
+    //   height = _height * s;
+    // } else if (width < minSizeConstraint || height < minSizeConstraint) {
+    //   final s = max(minSizeConstraint / width, minSizeConstraint / height);
+    //   width = _width * s;
+    //   height = _height * s;
+    // }
+    // return Tuple3(width, height, fit);
+  }
 }
 
 class RichTextProxy extends SingleChildRenderObjectWidget {

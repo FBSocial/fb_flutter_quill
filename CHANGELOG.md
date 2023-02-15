@@ -61,6 +61,9 @@
 # [4.0.6]
 * Bug fix for copying text with new lines.
 
+# [4.0.5+31]
+* Fixed IME candidate window is not in the right position when use flutter 3.3.8 on windows
+
 # [4.0.5]
 * Fixed casting null to Tuple2 when link dialog is dismissed without any input (e.g. barrier dismissed).
 

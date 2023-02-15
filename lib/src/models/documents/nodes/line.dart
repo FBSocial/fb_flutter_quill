@@ -28,7 +28,8 @@ class Line extends Container<Leaf?> {
   /// Returns `true` if this line contains an embedded object.
   bool get hasEmbed {
     // 修改，由于MentionEmbed被当做Embed处理了，但是在显示上又属于inline节点，所以加child !is MentionEmbed判断
-    return children.any((child) => child is Embed && child.value is! MentionEmbed);
+    return children
+        .any((child) => child is Embed && child.value is! MentionEmbed);
   }
 
   /// Returns next [Line] or `null` if this is the last line in the document.

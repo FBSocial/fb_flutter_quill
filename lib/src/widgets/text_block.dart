@@ -4,7 +4,6 @@ import 'package:tuple/tuple.dart';
 
 import '../../flutter_quill.dart';
 import '../models/documents/nodes/block.dart';
-import '../models/documents/nodes/line.dart';
 import '../utils/delta.dart';
 import 'box.dart';
 import 'cursor.dart';
@@ -66,8 +65,14 @@ class EditableTextBlock extends StatelessWidget {
       required this.readOnly,
       this.onLaunchUrl,
       this.customStyleBuilder,
+      this.mentionBuilder,
+      this.emojiBuilder,
+      this.linkParse,
       Key? key});
 
+  final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
+  final InlineSpan? Function(String)? emojiBuilder;
+  final void Function(String)? linkParse;
   final Block block;
   final QuillController controller;
   final TextDirection textDirection;
@@ -130,13 +135,16 @@ class EditableTextBlock extends StatelessWidget {
           TextLine(
             line: line,
             textDirection: textDirection,
-            embedBuilder: embedBuilder,
             customStyleBuilder: customStyleBuilder,
             styles: styles!,
             readOnly: readOnly,
             controller: controller,
             linkActionPicker: linkActionPicker,
             onLaunchUrl: onLaunchUrl,
+            embedBuilder: embedBuilder,
+            emojiBuilder: emojiBuilder,
+            mentionBuilder: mentionBuilder,
+            linkParse: linkParse,
           ),
           _getIndentWidth(),
           _getSpacingForLine(line, index, count, defaultStyles),

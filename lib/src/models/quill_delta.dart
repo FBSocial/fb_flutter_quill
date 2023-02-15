@@ -115,6 +115,41 @@ class Operation {
     throw ArgumentError.value(data, 'Invalid data for Delta operation.');
   }
 
+  // 修改，添加fromJson2方法，编辑器的flutter版本 @和channel当作普通普通文本处理，所以不需要转成MentionEmbed
+  static Operation fromJson2(Map data, {DataDecoder? dataDecoder}) {
+    dataDecoder ??= _passThroughDataDecoder;
+    final map = Map<String, dynamic>.from(data);
+    if (map.containsKey(Operation.insertKey)) {
+      final data = dataDecoder(map[Operation.insertKey]);
+
+      // final Map<String, dynamic>? attributes = map[Operation.attributesKey] == null
+      //     ? null : Map.from(map[Operation.attributesKey]);
+
+      // if (attributes?.containsKey('at') == true) {
+      //   final mentionValue = data is String ? data : '';
+      //   final embed = MentionEmbed.fromAttribute(attributes!['at'], '@', mentionValue);
+      //   return Operation._(Operation.insertKey, 1, embed.toFormalJson(), attributes);
+      // }
+      // if (attributes?.containsKey('channel') == true) {
+      //   final mentionValue = data is String ? data : '';
+      //   final embed = MentionEmbed.fromAttribute(attributes!['channel'], '#', mentionValue);
+      //   return Operation._(Operation.insertKey, 1, embed.toFormalJson(), attributes);
+      // }
+
+      final dataLength = data is String ? data.length : 1;
+      return Operation._(
+          Operation.insertKey, dataLength, data, map[Operation.attributesKey]);
+    } else if (map.containsKey(Operation.deleteKey)) {
+      final int? length = map[Operation.deleteKey];
+      return Operation._(Operation.deleteKey, length, '', null);
+    } else if (map.containsKey(Operation.retainKey)) {
+      final int? length = map[Operation.retainKey];
+      return Operation._(
+          Operation.retainKey, length, '', map[Operation.attributesKey]);
+    }
+    throw ArgumentError.value(data, 'Invalid data for Delta operation.');
+  }
+
   // 修改
   /// Returns JSON-serializable representation of this operation.
   Map<String, dynamic> toJson() {
@@ -234,7 +269,7 @@ class Operation {
     if (identical(this, other)) return true;
     if (other is! Operation) return false;
     final typedOther = other;
-    bool isValueEqual = _valueEquality.equals(data, typedOther.data);
+    var isValueEqual = _valueEquality.equals(data, typedOther.data);
     if (data is Map<String, dynamic> && other.data is Map<String, dynamic>) {
       isValueEqual = _valueEquality.equals(
         Embeddable.fromJson(data as Map<String, dynamic>).toFormalJson(),
@@ -245,6 +280,7 @@ class Operation {
     return key == typedOther.key &&
         length == typedOther.length &&
         isValueEqual &&
+        /* _valueEquality.equals(data, typedOther.data) && */
         hasSameAttributes(typedOther);
   }
 
@@ -401,8 +437,8 @@ class Delta {
   /// Returns JSON-serializable version of this delta.
   List toJson() {
     final operationList = toList();
-    final List<Map<String, dynamic>> jsonList = [];
-    for (int i = 0; i < operationList.length; i++) {
+    final jsonList = <Map<String, dynamic>>[];
+    for (var i = 0; i < operationList.length; i++) {
       final operation = operationList[i];
       if (operation.key == Operation.insertKey) {
         if (operation.value is Map) {
@@ -414,12 +450,15 @@ class Delta {
           final next = i < length - 1 ? operationList[i + 1] : null;
           if (isBlockEmbed && next != null && next.value is Map) {
             final nextEmbedType = Embeddable.fromJson(next.value).type;
-            final isNextBlockEmbed = nextEmbedType == 'image' ||
-                nextEmbedType == 'video' ||
-                nextEmbedType == 'divider';
+            final isNextBlockEmbed = /*nextEmbedType == 'image' ||*/
+                nextEmbedType == 'video' || nextEmbedType == 'divider';
             if (isNextBlockEmbed) {
               jsonList.add(operation.toJson());
-              jsonList.add({Operation.insertKey: '\n'});
+
+              /// NOTE: 2022/3/27 在不清楚业务逻辑的情况下，保守操作，进行排除
+              if (nextEmbedType != 'image') {
+                jsonList.add({Operation.insertKey: '\n'});
+              }
               continue;
             }
           }
@@ -455,7 +494,7 @@ class Delta {
             }
           }
           if (operationValue != null) {
-            operationJson[Operation.insertKey] = '$operationValue';
+            operationJson[Operation.insertKey] = operationValue;
             jsonList.add(operationJson);
             continue;
           }
@@ -901,6 +940,13 @@ class Delta {
 
   @override
   String toString() => _operations.join('\n');
+
+  // 修改，添加fromJson2，使用flutter版本编辑器时使用此方法
+  static Delta fromJson2(List data, {DataDecoder? dataDecoder}) {
+    return Delta._(data
+        .map((op) => Operation.fromJson2(op, dataDecoder: dataDecoder))
+        .toList());
+  }
 }
 
 /// Specialized iterator for [Delta]s.
