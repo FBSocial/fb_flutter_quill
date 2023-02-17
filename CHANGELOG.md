@@ -1,3 +1,6 @@
+# [4.2.3+1]
+* . Merged desktop right-click menu copy, paste and fixed IME candidate position issue.
+
 # [4.2.3]
 * Ignore color:inherit and convert double to int for level.
 
