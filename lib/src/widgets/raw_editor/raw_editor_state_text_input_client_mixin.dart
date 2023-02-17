@@ -68,8 +68,10 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       );
 
       _updateSizeAndTransform();
-      _updateComposingRectIfNeeded();
-      _updateCaretRectIfNeeded();
+      if (Platform.isWindows || Platform.isMacOS) {
+        _updateComposingRectIfNeeded();
+        _updateCaretRectIfNeeded();
+      }
       _textInputConnection!.setEditingState(_lastKnownRemoteTextEditingValue!);
     }
 
