@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
+import 'package:flutter_quill/flutter_quill.dart';
 import 'package:tuple/tuple.dart';
 
 import '../models/documents/attribute.dart';

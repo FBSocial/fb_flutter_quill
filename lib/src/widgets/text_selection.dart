@@ -703,7 +703,6 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
     this.onSecondaryTapDown,
     this.onSingleTapUp,
     this.onSingleTapCancel,
-    this.onSecondaryTapDown,
     this.onSecondarySingleTapUp,
     this.onSecondarySingleTapCancel,
     this.onSecondaryDoubleTapDown,
@@ -748,8 +747,7 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
   /// another gesture from the touch is recognized.
   final GestureTapCancelCallback? onSingleTapCancel;
 
-  /// onTapDown for mouse right click
-  final GestureTapDownCallback? onSecondaryTapDown;
+
 
   /// onTapUp for mouse right click
   final GestureTapUpCallback? onSecondarySingleTapUp;
@@ -984,9 +982,9 @@ class _EditorTextSelectionGestureDetectorState
     widget.onSecondaryTap?.call();
   }
 
-  void _handleSecondaryTapDown(TapDownDetails details) {
-    widget.onSecondaryTapDown?.call(details);
-  }
+  // void _handleSecondaryTapDown(TapDownDetails details) {
+  //   widget.onSecondaryTapDown?.call(details);
+  // }
 
   void _doubleTapTimeout() {
     _doubleTapTimer = null;
@@ -1018,9 +1016,8 @@ class _EditorTextSelectionGestureDetectorState
           ..onTapCancel = _handleTapCancel
           ..onSecondaryTapDown = _handleSecondaryTapDown
           ..onSecondaryTapUp = _handleSecondaryTapUp
-          ..onSecondaryTapCancel = _handleSecondaryTapCancel;
+          ..onSecondaryTapCancel = _handleSecondaryTapCancel
           ..onSecondaryTap = _handleSecondaryTap
-          ..onSecondaryTapDown = _handleSecondaryTapDown
           ..onTapCancel = _handleTapCancel;
       },
     );
