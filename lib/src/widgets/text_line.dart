@@ -11,6 +11,7 @@ import 'package:url_launcher/url_launcher.dart';
 
 import '../models/documents/attribute.dart';
 import '../models/documents/nodes/container.dart' as container_node;
+import '../models/documents/nodes/embeddable.dart';
 import '../models/documents/nodes/leaf.dart';
 import '../models/documents/nodes/leaf.dart' as leaf;
 import '../models/documents/nodes/line.dart';
@@ -40,6 +41,10 @@ class TextLine extends StatefulWidget {
     required this.linkActionPicker,
     this.textDirection,
     this.customStyleBuilder,
+    // 修改，添加mentionBuilder
+    this.mentionBuilder,
+    this.emojiBuilder,
+    this.linkParse,
     Key? key,
   }) : super(key: key);
 
@@ -52,6 +57,9 @@ class TextLine extends StatefulWidget {
   final CustomStyleBuilder? customStyleBuilder;
   final ValueChanged<String>? onLaunchUrl;
   final LinkActionPicker linkActionPicker;
+  final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
+  final InlineSpan? Function(String)? emojiBuilder;
+  final void Function(String)? linkParse;
 
   @override
   State<TextLine> createState() => _TextLineState();
@@ -135,6 +143,14 @@ class _TextLineState extends State<TextLine> {
     if (widget.line.hasEmbed && widget.line.childCount == 1) {
       // For video, it is always single child
       final embed = widget.line.children.single as Embed;
+      if (embed.value is BlockEmbed && embed.value.type == 'divider') {
+        /// 修改，下划线回调
+        return EmbedProxy(widget.embedBuilder(
+            context, widget.controller, embed, widget.readOnly));
+      } else {
+        return EmbedProxy(widget.embedBuilder(
+            context, widget.controller, embed, widget.readOnly));
+      }
       return EmbedProxy(
         widget.embedBuilder(
           context,
@@ -144,6 +160,7 @@ class _TextLineState extends State<TextLine> {
         ),
       );
     }
+
     final textSpan = _getTextSpanForWholeLine(context);
     final strutStyle = StrutStyle.fromTextStyle(textSpan.style!);
     final textAlign = _getTextAlign();
@@ -288,34 +305,128 @@ class _TextLineState extends State<TextLine> {
     return textStyle;
   }
 
-  TextSpan _getTextSpanFromNode(
+  InlineSpan _getTextSpanFromNode(
       DefaultStyles defaultStyles, Node node, Style lineStyle) {
+    // TODO: 2022/3/2 需要业务分离TextLine与提及
+    if (node is Embed && node.value is MentionEmbed) {
+      final nodeStyle = node.style;
+      if (widget.mentionBuilder != null) {
+        // NOTE: 2022/3/2 通过外部获取@的TextSpan
+        return widget.mentionBuilder!.call(
+          node,
+          _getInlineTextStyle(node, defaultStyles, nodeStyle, lineStyle, false),
+        );
+      }
+      return TextSpan(text: node.value.toString());
+    }
+
     final textNode = node as leaf.Text;
     final nodeStyle = textNode.style;
     final isLink = nodeStyle.containsKey(Attribute.link.key) &&
         nodeStyle.attributes[Attribute.link.key]!.value != null;
 
-    return TextSpan(
-      text: textNode.value,
-      style: _getInlineTextStyle(
-          textNode, defaultStyles, nodeStyle, lineStyle, isLink),
-      recognizer: isLink && canLaunchLinks ? _getRecognizer(node) : null,
-      mouseCursor: isLink && canLaunchLinks ? SystemMouseCursors.click : null,
-    );
+    final children = <InlineSpan>[];
+    if (isLink) {
+      return TextSpan(
+        text: textNode.value,
+        style: _getInlineTextStyle(
+            textNode, defaultStyles, nodeStyle, lineStyle, true),
+        recognizer: canLaunchLinks ? _getRecognizer(node) : null,
+        mouseCursor: canLaunchLinks ? SystemMouseCursors.click : null,
+      );
+    } else {
+      final emojiSeparator = String.fromCharCode(0);
+      // NOTE: 2022/3/2 机器人会带入链接，因为Attribute值非Attribute.link，需要手动处理
+      // 匹配表情和url
+      final newText = textNode.value.splitMapJoin(
+          RegExp(
+              r'\[.*?\]|(http(s)?):\/\/[(www\.)?a-zA-Z0-9@:._\+~#=-]{1,256}\.[a-z0-9]{2,6}\b([-a-zA-Z0-9!@:_\+.~#?&//=%,]*)'),
+          onMatch: (m) => '$emojiSeparator${m.group(0)}$emojiSeparator',
+          onNonMatch: (m) => m);
+
+      final splits = newText.split(emojiSeparator);
+      for (final e in splits) {
+        if (e.isEmpty) continue;
+        if (e[0] == '[' && e[e.length - 1] == ']') {
+          var child;
+          final emojiName = e.substring(1, e.length - 1);
+          if (widget.emojiBuilder != null) {
+            child = widget.emojiBuilder!.call(emojiName);
+          }
+          if (child != null) {
+            children.add(child);
+          } else {
+            children.add(TextSpan(
+              text: e,
+              style: _getInlineTextStyle(
+                  textNode, defaultStyles, nodeStyle, lineStyle, false),
+            ));
+          }
+        } else {
+          final _isLink = e.startsWith('http');
+          children.add(TextSpan(
+            text: e,
+            style: _getInlineTextStyle(
+                textNode, defaultStyles, nodeStyle, lineStyle, _isLink),
+
+            /// NOTE： 优先采用自定义的链接跳转
+            recognizer: _isLink && canLaunchLinks
+                ? (widget.linkParse != null
+                    ? (TapGestureRecognizer()
+                      ..onTap = () => widget.linkParse?.call(e))
+                    : _getRecognizer(node))
+                : null,
+            mouseCursor:
+                _isLink && canLaunchLinks ? SystemMouseCursors.click : null,
+          ));
+        }
+      }
+    }
+
+    return TextSpan(children: children);
   }
 
-  TextStyle _getInlineTextStyle(leaf.Text textNode, DefaultStyles defaultStyles,
+  TextStyle _getInlineTextStyle(Node note, DefaultStyles defaultStyles,
       Style nodeStyle, Style lineStyle, bool isLink) {
-    var res = const TextStyle(); // This is inline text style
-    final color = textNode.style.attributes[Attribute.color.key];
+    // This is inline text style
+    var res = const TextStyle();
 
+    /// 添加MentionEmbed H1的处理
+    if (note is Embed &&
+        note.value is MentionEmbed &&
+        lineStyle.containsKey(Attribute.header.key)) {
+      lineStyle.attributes.forEach((key, value) {
+        if (key == Attribute.header.key) {
+          if (Attribute.h1 == value && defaultStyles.h1 != null) {
+            res =
+                _merge(res, defaultStyles.h1!.style.copyWith(color: res.color));
+          }
+          if (Attribute.h2 == value && defaultStyles.h2 != null) {
+            res =
+                _merge(res, defaultStyles.h2!.style.copyWith(color: res.color));
+          }
+          if (Attribute.h3 == value && defaultStyles.h3 != null) {
+            res =
+                _merge(res, defaultStyles.h3!.style.copyWith(color: res.color));
+          }
+        }
+      });
+    }
+
+    final color = note.style.attributes[Attribute.color.key];
     <String, TextStyle?>{
       Attribute.bold.key: defaultStyles.bold,
       Attribute.italic.key: defaultStyles.italic,
       Attribute.small.key: defaultStyles.small,
       Attribute.link.key: defaultStyles.link,
+      // 修改，at 和 channel使用默认的超链接样式
+      Attribute.at.key: defaultStyles.link,
+      Attribute.channel.key: defaultStyles.link,
       Attribute.underline.key: defaultStyles.underline,
       Attribute.strikeThrough.key: defaultStyles.strikeThrough,
+      // NOTE: 2022/3/2 添加@与#样式
+      Attribute.at.key: defaultStyles.at,
+      Attribute.channel.key: defaultStyles.channel,
     }.forEach((k, s) {
       if (nodeStyle.values.any((v) => v.key == k)) {
         if (k == Attribute.underline.key || k == Attribute.strikeThrough.key) {
@@ -334,16 +445,21 @@ class _TextLineState extends State<TextLine> {
       }
     });
 
+    /// NOTE: 兼容没有属性的情况下的http
+    if (nodeStyle.isEmpty && isLink) {
+      res = _merge(res, defaultStyles.link!);
+    }
+
     if (nodeStyle.containsKey(Attribute.inlineCode.key)) {
       res = _merge(res, defaultStyles.inlineCode!.styleFor(lineStyle));
     }
 
-    final font = textNode.style.attributes[Attribute.font.key];
+    final font = note.style.attributes[Attribute.font.key];
     if (font != null && font.value != null) {
       res = res.merge(TextStyle(fontFamily: font.value));
     }
 
-    final size = textNode.style.attributes[Attribute.size.key];
+    final size = note.style.attributes[Attribute.size.key];
     if (size != null && size.value != null) {
       switch (size.value) {
         case 'small':
@@ -370,13 +486,13 @@ class _TextLineState extends State<TextLine> {
       }
     }
 
-    final background = textNode.style.attributes[Attribute.background.key];
+    final background = note.style.attributes[Attribute.background.key];
     if (background != null && background.value != null) {
       final backgroundColor = stringToColor(background.value);
       res = res.merge(TextStyle(backgroundColor: backgroundColor));
     }
 
-    res = _applyCustomAttributes(res, textNode.style.attributes);
+    res = _applyCustomAttributes(res, note.style.attributes);
     return res;
   }
 
@@ -400,7 +516,7 @@ class _TextLineState extends State<TextLine> {
   }
 
   void _tapNodeLink(Node node) {
-    final link = node.style.attributes[Attribute.link.key]!.value;
+    final link = node.style.attributes[Attribute.link.key]?.value;
 
     _tapLink(link);
   }
@@ -418,7 +534,13 @@ class _TextLineState extends State<TextLine> {
         .any((linkPrefix) => link!.toLowerCase().startsWith(linkPrefix))) {
       link = 'https://$link';
     }
-    launchUrl(link);
+
+    /// NOTE: 添加自定义外部link解析
+    if (widget.linkParse != null) {
+      widget.linkParse?.call(link);
+    } else {
+      launchUrl(link);
+    }
   }
 
   Future<void> _longPressLink(Node node) async {

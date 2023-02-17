@@ -111,6 +111,9 @@ abstract class Node extends LinkedListEntry<Node> {
 
   String toPlainText();
 
+  // 修改
+  String toContent();
+
   Delta toDelta();
 
   void insert(int index, Object data, Style? style);

@@ -158,12 +158,23 @@ abstract class Leaf extends Node {
       return isLast ? null : next as Leaf?;
     }
 
-    assert(this is Text);
-    final text = _value as String;
-    _value = text.substring(0, index);
-    final split = Leaf(text.substring(index))..applyStyle(style);
-    insertAfter(split);
-    return split;
+    // assert(this is Text);
+    // 修改，由于flutter-quill和tun-editor共用一套document model，
+    // tun-editor插入@和#插入的方式是MentionEmbed（lib/src/models/quill_delta.dart:78），导致这里assert(this is Text)跑错误
+    // 所以临时兼容MentionEmbed，让Text和MentionEmbed可以同时存在，假如弃用tun-editor则可以还原此处
+    if (this is Embed && _value is MentionEmbed) {
+      final text = (_value as MentionEmbed).value;
+      final split = Leaf(_value)..applyStyle(style);
+      insertAfter(split);
+      return split;
+    } else {
+      assert(this is Text);
+      final text = _value as String;
+      _value = text.substring(0, index);
+      final split = Leaf(text.substring(index))..applyStyle(style);
+      insertAfter(split);
+      return split;
+    }
   }
 
   /// Cuts a leaf from [index] to the end of this node and returns new node
@@ -225,6 +236,10 @@ class Text extends Leaf {
 
   @override
   String toPlainText() => value;
+
+  // 修改
+  @override
+  String toContent() => value;
 }
 
 /// An embed node inside of a line in a Quill document.
@@ -254,11 +269,24 @@ class Embed extends Leaf {
   @override
   Embeddable get value => super.value as Embeddable;
 
+  // 修改，toPlainText返回值，兼容@、#
   // Embed nodes are represented as unicode object replacement character in
   // plain text.
   @override
-  String toPlainText() => kObjectReplacementCharacter;
+  String toPlainText() => toContent();
+
+  // 修改，添加@和#的embed类型不显示文本
+  @override
+  String toContent() {
+    if (value is MentionEmbed) {
+      return (value as MentionEmbed).value;
+    }
+    return kObjectReplacementCharacter;
+  }
 
   @override
   String toString() => '${super.toString()} ${value.type}';
+
+  @override
+  int get length => value.length;
 }

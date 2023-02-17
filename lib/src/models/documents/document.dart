@@ -21,6 +21,11 @@ class Document {
     _loadDocument(_delta);
   }
 
+  // 修改，添加fromJson2方法，使用flutter版本编辑器时使用此方法
+  Document.fromJson2(List data) : _delta = _transform(Delta.fromJson2(data)) {
+    _loadDocument(_delta);
+  }
+
   /// Creates new document from provided JSON `data`.
   Document.fromJson(List data) : _delta = _transform(Delta.fromJson(data)) {
     _loadDocument(_delta);
@@ -280,6 +285,15 @@ class Document {
     _observer.add(change);
     _history.handleDocChange(change);
   }
+  // 修改
+  void refreshDocument(
+      Delta change, Delta oldDelta, ChangeSource changeSource) {
+    _root.children.clear();
+    _delta = oldDelta.compose(change);
+    _loadDocument(_delta);
+    final onChange = Tuple3(oldDelta, change, changeSource);
+    _observer.add(onChange);
+  }
 
   Tuple2 undo() {
     return _history.undo(this);
@@ -353,7 +367,8 @@ class Document {
       throw ArgumentError.value(doc, 'Document Delta cannot be empty.');
     }
 
-    assert((doc.last.data as String).endsWith('\n'));
+    // 修改，暂时注释，由于现有的消息部分没带换行符结尾又用了document解析，会抛错误
+    // assert((doc.last.data as String).endsWith('\n'));
 
     var offset = 0;
     for (final op in doc.toList()) {
