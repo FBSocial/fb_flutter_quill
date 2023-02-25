@@ -318,6 +318,36 @@ class _TextLineState extends State<TextLine> {
       return TextSpan(text: node.value.toString());
     }
 
+    ///针对flutter_quill只读模式 at和# 采用Embed存放，为了方便在外部传入自定义的InlineSpan控件
+    if (widget.readOnly) {
+      // at
+      if (node.style.containsKey(Attribute.at.key)) {
+        if (widget.mentionBuilder != null) {
+          node as leaf.Text;
+          final attributeValue =
+              node.style.attributes[Attribute.at.key]!.value as String;
+          return widget.mentionBuilder!.call(
+            Embed(MentionEmbed.fromAttribute(attributeValue, '@', node.value)),
+            _getInlineTextStyle(
+                node, defaultStyles, node.style, lineStyle, false),
+          );
+        }
+      }
+      // #
+      if (node.style.containsKey(Attribute.channel.key)) {
+        if (widget.mentionBuilder != null) {
+          node as leaf.Text;
+          final attributeValue =
+              node.style.attributes[Attribute.channel.key]!.value as String;
+          return widget.mentionBuilder!.call(
+            Embed(MentionEmbed.fromAttribute(attributeValue, '#', node.value)),
+            _getInlineTextStyle(
+                node, defaultStyles, node.style, lineStyle, false),
+          );
+        }
+      }
+    }
+
     final textNode = node as leaf.Text;
     final nodeStyle = textNode.style;
     final isLink = nodeStyle.containsKey(Attribute.link.key) &&
