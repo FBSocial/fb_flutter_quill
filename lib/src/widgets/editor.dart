@@ -196,6 +196,10 @@ class QuillEditor extends StatefulWidget {
       this.linkParse,
       this.textSelectionControls,
       this.onImagePaste,
+        this.cursorOffset,
+        this.cursorHeight,
+        this.cursorWidth,
+        this.cursorRadius,
       Key? key})
       : super(key: key);
 
@@ -420,6 +424,11 @@ class QuillEditor extends StatefulWidget {
 
   final double caretOffset;
 
+  final Offset? cursorOffset;
+  final double? cursorHeight;
+  final Radius? cursorRadius;
+  final double? cursorWidth;
+
   /// allows to create a custom textSelectionControls,
   /// if this is null a default textSelectionControls based on the app's theme
   /// will be used
@@ -455,10 +464,10 @@ class QuillEditorState extends State<QuillEditor>
     var textSelectionControls = widget.textSelectionControls;
     bool paintCursorAboveText;
     bool cursorOpacityAnimates;
-    Offset? cursorOffset;
+    Offset? cursorOffset = widget.cursorOffset;
     Color? cursorColor;
     Color selectionColor;
-    Radius? cursorRadius;
+    Radius? cursorRadius = widget.cursorRadius;
 
     if (isAppleOS(theme.platform)) {
       final cupertinoTheme = CupertinoTheme.of(context);
@@ -469,7 +478,7 @@ class QuillEditorState extends State<QuillEditor>
       selectionColor = selectionTheme.selectionColor ??
           cupertinoTheme.primaryColor.withOpacity(0.40);
       cursorRadius ??= const Radius.circular(2);
-      cursorOffset = Offset(
+      cursorOffset ??= Offset(
           iOSHorizontalOffset / MediaQuery.of(context).devicePixelRatio, 0);
     } else if (isDesktop(theme.platform)) {
       textSelectionControls ??= desktopTextSelectionControls;
@@ -512,7 +521,8 @@ class QuillEditorState extends State<QuillEditor>
       cursorStyle: CursorStyle(
         color: cursorColor,
         backgroundColor: Colors.grey,
-        width: 2,
+        width: widget.cursorWidth ?? 2,
+        height: widget.cursorHeight,
         radius: cursorRadius,
         offset: cursorOffset,
         paintAboveText: widget.paintCursorAboveText ?? paintCursorAboveText,
