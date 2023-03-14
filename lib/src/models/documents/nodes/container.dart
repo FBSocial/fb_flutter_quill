@@ -105,6 +105,10 @@ abstract class Container<T extends Node?> extends Node {
   @override
   String toPlainText() => children.map((child) => child.toPlainText()).join();
 
+  // 修改
+  @override
+  String toContent() => children.map((child) => child.toContent()).join();
+
   /// Content length of this node's children.
   ///
   /// To get number of children in this node use [childCount].

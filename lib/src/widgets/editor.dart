@@ -15,6 +15,7 @@ import '../models/documents/document.dart';
 import '../models/documents/nodes/container.dart' as container_node;
 import '../models/documents/nodes/embeddable.dart';
 import '../models/documents/nodes/leaf.dart';
+import '../models/documents/nodes/leaf.dart' as leaf;
 import '../models/documents/style.dart';
 import '../utils/platform.dart';
 import 'box.dart';
@@ -64,6 +65,16 @@ abstract class RenderAbstractEditor implements TextLayoutMetrics {
   ///
   /// Useful to enforce visibility of full caret at given position
   Rect getLocalRectForCaret(TextPosition position);
+
+  /// Returns the smallest [Rect], in the local coordinate system, that covers
+  /// the text within the [TextRange] specified.
+  ///
+  /// This method is used to calculate the approximate position of the IME bar
+  /// on iOS.
+  ///
+  /// Returns null if [TextRange.isValid] is false for the given `range`, or the
+  /// given `range` is collapsed.
+  Rect? getRectForComposingRange(TextRange range);
 
   /// Returns the local coordinates of the endpoints of the given selection.
   ///
@@ -153,6 +164,8 @@ class QuillEditor extends StatefulWidget {
       required this.autoFocus,
       required this.readOnly,
       required this.expands,
+      this.isSelectionInViewport,
+      this.caretOffset = 0,
       this.showCursor,
       this.paintCursorAboveText,
       this.placeholder,
@@ -178,6 +191,10 @@ class QuillEditor extends StatefulWidget {
       this.customStyleBuilder,
       this.locale,
       this.floatingCursorDisabled = false,
+      this.pasteExtension,
+      this.mentionBuilder,
+      this.emojiBuilder,
+      this.linkParse,
       this.textSelectionControls,
       this.onImagePaste,
       this.customShortcuts,
@@ -194,6 +211,7 @@ class QuillEditor extends StatefulWidget {
     /// The locale to use for the editor toolbar, defaults to system locale
     /// More at https://github.com/singerdmx/flutter-quill#translation
     Locale? locale,
+    IsSelectionInViewport? isSelectionInViewport,
   }) {
     return QuillEditor(
       controller: controller,
@@ -207,8 +225,23 @@ class QuillEditor extends StatefulWidget {
       keyboardAppearance: keyboardAppearance ?? Brightness.light,
       locale: locale,
       embedBuilders: embedBuilders,
+      isSelectionInViewport: isSelectionInViewport,
     );
   }
+
+  final InlineSpan Function(leaf.Embed, TextStyle)? mentionBuilder;
+
+  /// 粘贴图片回调
+  final VoidCallback? pasteExtension;
+
+  /// 表情解析器
+  final InlineSpan? Function(String)? emojiBuilder;
+
+  /// 链接解析扩展
+  final void Function(String)? linkParse;
+
+  /// 自定义选择
+  // final TextSelectionControls? selectionControls;
 
   /// Controller object which establishes a link between a rich text document
   /// and this editor.
@@ -356,6 +389,7 @@ class QuillEditor extends StatefulWidget {
   // Returns whether gesture is handled
   final bool Function(LongPressMoveUpdateDetails details,
       TextPosition Function(Offset offset))? onSingleLongTapMoveUpdate;
+
   // Returns whether gesture is handled
   final bool Function(
           LongPressEndDetails details, TextPosition Function(Offset offset))?
@@ -385,6 +419,10 @@ class QuillEditor extends StatefulWidget {
   final LinkActionPickerDelegate linkActionPickerDelegate;
 
   final bool floatingCursorDisabled;
+
+  final IsSelectionInViewport? isSelectionInViewport;
+
+  final double caretOffset;
 
   /// allows to create a custom textSelectionControls,
   /// if this is null a default textSelectionControls based on the app's theme
@@ -421,7 +459,7 @@ class QuillEditorState extends State<QuillEditor>
     final theme = Theme.of(context);
     final selectionTheme = TextSelectionTheme.of(context);
 
-    TextSelectionControls textSelectionControls;
+    var textSelectionControls = widget.textSelectionControls;
     bool paintCursorAboveText;
     bool cursorOpacityAnimates;
     Offset? cursorOffset;
@@ -431,7 +469,7 @@ class QuillEditorState extends State<QuillEditor>
 
     if (isAppleOS(theme.platform)) {
       final cupertinoTheme = CupertinoTheme.of(context);
-      textSelectionControls = cupertinoTextSelectionControls;
+      textSelectionControls ??= cupertinoTextSelectionControls;
       paintCursorAboveText = true;
       cursorOpacityAnimates = true;
       cursorColor ??= selectionTheme.cursorColor ?? cupertinoTheme.primaryColor;
@@ -440,8 +478,15 @@ class QuillEditorState extends State<QuillEditor>
       cursorRadius ??= const Radius.circular(2);
       cursorOffset = Offset(
           iOSHorizontalOffset / MediaQuery.of(context).devicePixelRatio, 0);
+    } else if (isDesktop(theme.platform)) {
+      textSelectionControls ??= desktopTextSelectionControls;
+      paintCursorAboveText = false;
+      cursorOpacityAnimates = false;
+      cursorColor ??= selectionTheme.cursorColor ?? theme.colorScheme.primary;
+      selectionColor = selectionTheme.selectionColor ??
+          theme.colorScheme.primary.withOpacity(0.40);
     } else {
-      textSelectionControls = materialTextSelectionControls;
+      textSelectionControls ??= materialTextSelectionControls;
       paintCursorAboveText = false;
       cursorOpacityAnimates = false;
       cursorColor ??= selectionTheme.cursorColor ?? theme.colorScheme.primary;
@@ -508,6 +553,12 @@ class QuillEditorState extends State<QuillEditor>
       linkActionPickerDelegate: widget.linkActionPickerDelegate,
       customStyleBuilder: widget.customStyleBuilder,
       floatingCursorDisabled: widget.floatingCursorDisabled,
+      isSelectionInViewport: widget.isSelectionInViewport,
+      caretOffset: widget.caretOffset,
+      mentionBuilder: widget.mentionBuilder,
+      pasteExtension: widget.pasteExtension,
+      emojiBuilder: widget.emojiBuilder,
+      linkParse: widget.linkParse,
       onImagePaste: widget.onImagePaste,
       customShortcuts: widget.customShortcuts,
       customActions: widget.customActions,
@@ -536,7 +587,6 @@ class QuillEditorState extends State<QuillEditor>
         child: editor,
       );
     }
-
     return editor;
   }
 
@@ -800,6 +850,8 @@ const EdgeInsets _kFloatingCursorAddedMargin = EdgeInsets.fromLTRB(4, 4, 4, 5);
 const EdgeInsets _kFloatingCaretSizeIncrease =
     EdgeInsets.symmetric(horizontal: 0.5, vertical: 1);
 
+typedef IsSelectionInViewport = List<bool> Function(double selectionStart, double selectionEnd);
+
 /// Displays a document as a vertical list of document segments (lines
 /// and blocks).
 ///
@@ -808,10 +860,11 @@ class RenderEditor extends RenderEditableContainerBox
     with RelayoutWhenSystemFontsChangeMixin
     implements RenderAbstractEditor {
   RenderEditor({
+    required this.key,
     required this.document,
     required TextDirection textDirection,
     required bool hasFocus,
-    required this.selection,
+    required TextSelection selection,
     required this.scrollable,
     required LayerLink startHandleLayerLink,
     required LayerLink endHandleLayerLink,
@@ -821,6 +874,7 @@ class RenderEditor extends RenderEditableContainerBox
     required this.onSelectionCompleted,
     required double scrollBottomInset,
     required this.floatingCursorDisabled,
+    this.isSelectionInViewport,
     ViewportOffset? offset,
     List<RenderEditableBox>? children,
     EdgeInsets floatingCursorAddedMargin =
@@ -828,6 +882,7 @@ class RenderEditor extends RenderEditableContainerBox
     double? maxContentWidth,
   })  : _hasFocus = hasFocus,
         _extendSelectionOrigin = selection,
+        _selection = selection,
         _startHandleLayerLink = startHandleLayerLink,
         _endHandleLayerLink = endHandleLayerLink,
         _cursorController = cursorController,
@@ -845,10 +900,29 @@ class RenderEditor extends RenderEditableContainerBox
   final bool scrollable;
 
   Document document;
-  TextSelection selection;
+
+  GlobalKey key;
+
+  /// The region of text that is selected, if any.
+  ///
+  /// The caret position is represented by a collapsed selection.
+  ///
+  /// If [selection] is null, there is no selection and attempts to
+  /// manipulate the selection will throw.
+  TextSelection get selection => _selection;
+  TextSelection _selection;
+
+  set selection(TextSelection value) {
+    if (_selection == value) return;
+    _selection = value;
+    markNeedsPaint();
+    markNeedsSemanticsUpdate();
+  }
+
   bool _hasFocus = false;
   LayerLink _startHandleLayerLink;
   LayerLink _endHandleLayerLink;
+  IsSelectionInViewport? isSelectionInViewport;
 
   /// Called when the selection changes.
   TextSelectionChangedHandler onSelectionChanged;
@@ -863,28 +937,49 @@ class RenderEditor extends RenderEditableContainerBox
   final ValueNotifier<bool> _selectionEndInViewport = ValueNotifier<bool>(true);
 
   void _updateSelectionExtentsVisibility(Offset effectiveOffset) {
-    final visibleRegion = Offset.zero & size;
-    final startPosition =
-        TextPosition(offset: selection.start, affinity: selection.affinity);
-    final startOffset = _getOffsetForCaret(startPosition);
-    // TODO(justinmc): https://github.com/flutter/flutter/issues/31495
-    // Check if the selection is visible with an approximation because a
-    // difference between rounded and unrounded values causes the caret to be
-    // reported as having a slightly (< 0.5) negative y offset. This rounding
-    // happens in paragraph.cc's layout and TextPainer's
-    // _applyFloatingPointHack. Ideally, the rounding mismatch will be fixed and
-    // this can be changed to be a strict check instead of an approximation.
-    const visibleRegionSlop = 0.5;
-    _selectionStartInViewport.value = visibleRegion
-        .inflate(visibleRegionSlop)
-        .contains(startOffset + effectiveOffset);
+    // 修改，添加isSelectionInViewport!=null的逻辑
+    if(isSelectionInViewport!=null) {
+      final renderBox = (key.currentContext!.findRenderObject()!) as RenderBox ;
+      final edotirOffset = renderBox.localToGlobal(Offset.zero);
 
-    final endPosition =
-        TextPosition(offset: selection.end, affinity: selection.affinity);
-    final endOffset = _getOffsetForCaret(endPosition);
-    _selectionEndInViewport.value = visibleRegion
-        .inflate(visibleRegionSlop)
-        .contains(endOffset + effectiveOffset);
+      final startPosition =
+      TextPosition(offset: selection.start, affinity: selection.affinity);
+      final startOffset = _getOffsetForCaret(startPosition);
+      final startPositionY = edotirOffset.dy + startOffset.dy;
+
+      final endPosition =
+      TextPosition(offset: selection.end, affinity: selection.affinity);
+      final endOffset = _getOffsetForCaret(endPosition);
+      final endPositionY = edotirOffset.dy + endOffset.dy;
+
+      final List<bool> res = isSelectionInViewport!.call(startPositionY,endPositionY);
+      _selectionStartInViewport.value = res[0];
+      _selectionEndInViewport.value = res[1];
+
+    } else {
+      final visibleRegion = Offset.zero & size;
+      final startPosition =
+      TextPosition(offset: selection.start, affinity: selection.affinity);
+      final startOffset = _getOffsetForCaret(startPosition);
+      // TODO(justinmc): https://github.com/flutter/flutter/issues/31495
+      // Check if the selection is visible with an approximation because a
+      // difference between rounded and unrounded values causes the caret to be
+      // reported as having a slightly (< 0.5) negative y offset. This rounding
+      // happens in paragraph.cc's layout and TextPainer's
+      // _applyFloatingPointHack. Ideally, the rounding mismatch will be fixed and
+      // this can be changed to be a strict check instead of an approximation.
+      const visibleRegionSlop = 0.5;
+      _selectionStartInViewport.value = visibleRegion
+          .inflate(visibleRegionSlop)
+          .contains(startOffset + effectiveOffset);
+
+      final endPosition =
+      TextPosition(offset: selection.end, affinity: selection.affinity);
+      final endOffset = _getOffsetForCaret(endPosition);
+      _selectionEndInViewport.value = visibleRegion
+          .inflate(visibleRegionSlop)
+          .contains(endOffset + effectiveOffset);
+    }
   }
 
   // returns offset relative to this at which the caret will be painted
@@ -969,6 +1064,7 @@ class RenderEditor extends RenderEditableContainerBox
   }
 
   double? _maxContentWidth;
+
   set maxContentWidth(double? value) {
     if (_maxContentWidth == value) return;
     _maxContentWidth = value;
@@ -1033,6 +1129,20 @@ class RenderEditor extends RenderEditableContainerBox
   }
 
   Offset? _lastTapDownPosition;
+  Offset? _lastSecondaryTapDownPosition;
+
+  /// The position of the most recent secondary tap down event on this text
+  /// input.
+  Offset? get lastSecondaryTapDownPosition => _lastSecondaryTapDownPosition;
+
+  /// Tracks the position of a secondary tap event.
+  ///
+  /// Should be called before attempting to change the selection based on the
+  /// position of a secondary tap.
+  void handleSecondaryTapDown(TapDownDetails details) {
+    _lastTapDownPosition = details.globalPosition;
+    _lastSecondaryTapDownPosition = details.globalPosition;
+  }
 
   // Used on Desktop (mouse and keyboard enabled platforms) as base offset
   // for extending selection, either with combination of `Shift` + Click or
@@ -1414,6 +1524,19 @@ class RenderEditor extends RenderEditableContainerBox
 
     final boxParentData = targetChild.parentData as BoxParentData;
     return childLocalRect.shift(Offset(0, boxParentData.offset.dy));
+  }
+
+  @override
+  Rect? getRectForComposingRange(TextRange range) {
+    /// 增加判断会导致IME定位异常
+    // if (!range.isValid || range.isCollapsed) return null;
+
+    final endPosition =
+        TextPosition(offset: selection.end, affinity: selection.affinity);
+    final endOffset = _getOffsetForCaret(endPosition);
+
+    return (Offset.zero & Size(endOffset.dx, endOffset.dy + 2))
+        .shift(_paintOffset);
   }
 
   // Start floating cursor

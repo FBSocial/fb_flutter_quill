@@ -320,6 +320,8 @@ class EditorTextSelectionOverlay {
   }
 
   Widget _buildToolbar(BuildContext context) {
+    // if (selectionCtrls == null) return Container();
+
     // Find the horizontal midpoint, just above the selected text.
     List<TextSelectionPoint> endpoints;
 
@@ -337,15 +339,10 @@ class EditorTextSelectionOverlay {
       renderObject.localToGlobal(renderObject.size.bottomRight(Offset.zero)),
     );
 
-    final baseLineHeight = renderObject.preferredLineHeight(_selection.base);
-    final extentLineHeight =
-        renderObject.preferredLineHeight(_selection.extent);
-    final smallestLineHeight = math.min(baseLineHeight, extentLineHeight);
     final isMultiline = endpoints.last.point.dy - endpoints.first.point.dy >
-        smallestLineHeight / 2;
+        renderObject.preferredLineHeight(_selection.extent) / 2;
 
-    // If the selected text spans more than 1 line,
-    // horizontally center the toolbar.
+    // If the selected text spans more than 1 line, horizontally center the toolbar.
     // Derived from both iOS and Android.
     final midX = isMultiline
         ? editingRegion.width / 2
@@ -354,24 +351,33 @@ class EditorTextSelectionOverlay {
     final midpoint = Offset(
       midX,
       // The y-coordinate won't be made use of most likely.
-      endpoints[0].point.dy - baseLineHeight,
+      endpoints[0].point.dy -
+          renderObject.preferredLineHeight(_selection.extent),
     );
 
-    return FadeTransition(
-      opacity: _toolbarOpacity,
-      child: CompositedTransformFollower(
-        link: toolbarLayerLink,
-        showWhenUnlinked: false,
-        offset: -editingRegion.topLeft,
-        child: selectionCtrls.buildToolbar(
-            context,
-            editingRegion,
-            baseLineHeight,
-            midpoint,
-            endpoints,
-            selectionDelegate,
-            clipboardStatus,
-            null),
+    return Directionality(
+      textDirection: Directionality.of(this.context),
+      child: FadeTransition(
+        opacity: _toolbarOpacity,
+        child: CompositedTransformFollower(
+          link: toolbarLayerLink,
+          showWhenUnlinked: false,
+          offset: -editingRegion.topLeft,
+          child: Builder(
+            builder: (context) {
+              return selectionCtrls.buildToolbar(
+                context,
+                editingRegion,
+                renderObject.preferredLineHeight(_selection.extent),
+                midpoint,
+                endpoints,
+                selectionDelegate,
+                clipboardStatus,
+                renderObject.lastSecondaryTapDownPosition,
+              );
+            },
+          ),
+        ),
       ),
     );
   }
@@ -700,6 +706,8 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
     this.onTapDown,
     this.onForcePressStart,
     this.onForcePressEnd,
+    this.onSecondaryTap,
+    this.onSecondaryTapDown,
     this.onSingleTapUp,
     this.onSingleTapCancel,
     this.onSecondaryTapDown,
@@ -729,6 +737,12 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
   /// Called when a pointer that had previously triggered [onForcePressStart] is
   /// lifted off the screen.
   final GestureForcePressEndCallback? onForcePressEnd;
+
+  /// Called for a tap event with the secondary mouse button.
+  final GestureTapCallback? onSecondaryTap;
+
+  /// Called for a tap down event with the secondary mouse button.
+  final GestureTapDownCallback? onSecondaryTapDown;
 
   /// Called for each distinct tap except for every second tap of a double tap.
   /// For example, if the detector was configured with [onTapDown] and
@@ -973,6 +987,14 @@ class _EditorTextSelectionGestureDetectorState
     _isDoubleTap = false;
   }
 
+  void _handleSecondaryTap() {
+    widget.onSecondaryTap?.call();
+  }
+
+  void _handleSecondaryTapDown(TapDownDetails details) {
+    widget.onSecondaryTapDown?.call(details);
+  }
+
   void _doubleTapTimeout() {
     _doubleTapTimer = null;
     _lastTapOffset = null;
@@ -1000,6 +1022,9 @@ class _EditorTextSelectionGestureDetectorState
         instance
           ..onTapDown = _handleTapDown
           ..onTapUp = _handleTapUp
+          ..onSecondaryTap = _handleSecondaryTap
+          ..onSecondaryTapDown = _handleSecondaryTapDown
+          ..onTapCancel = _handleTapCancel;
           ..onTapCancel = _handleTapCancel
           ..onSecondaryTapDown = _handleSecondaryTapDown
           ..onSecondaryTapUp = _handleSecondaryTapUp

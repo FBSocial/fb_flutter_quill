@@ -18,6 +18,7 @@ import '../models/documents/document.dart';
 import '../models/documents/nodes/block.dart';
 import '../models/documents/nodes/embeddable.dart';
 import '../models/documents/nodes/leaf.dart' as leaf;
+import '../models/documents/nodes/leaf.dart';
 import '../models/documents/nodes/line.dart';
 import '../models/documents/nodes/node.dart';
 import '../models/documents/style.dart';
@@ -50,7 +51,9 @@ class RawEditor extends StatefulWidget {
       required this.cursorStyle,
       required this.selectionColor,
       required this.selectionCtrls,
-      required this.embedBuilder,
+        required this.embedBuilder,
+      this.isSelectionInViewport,
+        this.caretOffset = 0,
       Key? key,
       this.scrollable = true,
       this.padding = EdgeInsets.zero,
@@ -81,12 +84,30 @@ class RawEditor extends StatefulWidget {
       this.customStyleBuilder,
       this.floatingCursorDisabled = false,
       this.onImagePaste})
+      this.floatingCursorDisabled = false,
+      this.mentionBuilder,
+      this.emojiBuilder,
+      this.pasteExtension,
+      this.linkParse,})
       : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
             'maxHeight cannot be null'),
         showCursor = showCursor ?? true,
         super(key: key);
+
+  // 修改，添加mention builder
+  final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
+
+  /// 表情解析器
+  final InlineSpan? Function(String)? emojiBuilder;
+
+  /// 链接解析扩展
+  final void Function(String)? linkParse;
+
+  // 修改，添加是否可编辑参数
+  // final MouseCursor? mouseCursors;
+  final VoidCallback? pasteExtension;
 
   /// Controls the document being edited.
   final QuillController controller;
@@ -237,6 +258,8 @@ class RawEditor extends StatefulWidget {
   final LinkActionPickerDelegate linkActionPickerDelegate;
   final CustomStyleBuilder? customStyleBuilder;
   final bool floatingCursorDisabled;
+  final IsSelectionInViewport? isSelectionInViewport;
+  final double caretOffset;
 
   @override
   State<StatefulWidget> createState() => RawEditorState();
@@ -254,6 +277,9 @@ class RawEditorState extends EditorState
   KeyboardVisibilityController? _keyboardVisibilityController;
   StreamSubscription<bool>? _keyboardVisibilitySubscription;
   bool _keyboardVisible = false;
+
+  /// 点击激活
+  bool _isClickActivation = false;
 
   // Selection overlay
   @override
@@ -308,6 +334,9 @@ class RawEditorState extends EditorState
     Widget child = CompositedTransformTarget(
       link: _toolbarLayerLink,
       child: Semantics(
+        // onCopy: _semanticsOnCopy(controls),
+        // onCut: _semanticsOnCut(controls),
+        // onPaste: _semanticsOnPaste(controls),
         child: _Editor(
           key: _editorKey,
           document: _doc,
@@ -324,6 +353,7 @@ class RawEditorState extends EditorState
           padding: widget.padding,
           maxContentWidth: widget.maxContentWidth,
           floatingCursorDisabled: widget.floatingCursorDisabled,
+          isSelectionInViewport: widget.isSelectionInViewport,
           children: _buildChildren(_doc, context),
         ),
       ),
@@ -363,6 +393,7 @@ class RawEditorState extends EditorState
               maxContentWidth: widget.maxContentWidth,
               cursorController: _cursorCont,
               floatingCursorDisabled: widget.floatingCursorDisabled,
+              isSelectionInViewport: widget.isSelectionInViewport,
               children: _buildChildren(_doc, context),
             ),
           ),
@@ -582,11 +613,11 @@ class RawEditorState extends EditorState
 
     _selectionOverlay?.handlesVisible = _shouldShowSelectionHandles();
 
-    if (!_keyboardVisible) {
-      // This will show the keyboard for all selection changes on the
-      // editor, not just changes triggered by user gestures.
-      requestKeyboard();
-    }
+    // This will show the keyboard for all selection changes on the
+    // editor, not just changes triggered by user gestures.
+    requestKeyboard();
+    _isClickActivation = true;
+    _updateOrDisposeSelectionOverlayIfNeeded();
 
     if (cause == SelectionChangedCause.drag) {
       // When user updates the selection while dragging make sure to
@@ -642,27 +673,31 @@ class RawEditorState extends EditorState
       } else if (node is Block) {
         final attrs = node.style.attributes;
         final editableTextBlock = EditableTextBlock(
-            block: node,
-            controller: controller,
-            textDirection: _textDirection,
-            scrollBottomInset: widget.scrollBottomInset,
-            verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
-            textSelection: controller.selection,
-            color: widget.selectionColor,
-            styles: _styles,
-            enableInteractiveSelection: widget.enableInteractiveSelection,
-            hasFocus: _hasFocus,
-            contentPadding: attrs.containsKey(Attribute.codeBlock.key)
-                ? const EdgeInsets.all(16)
-                : null,
-            embedBuilder: widget.embedBuilder,
-            linkActionPicker: _linkActionPicker,
-            onLaunchUrl: widget.onLaunchUrl,
-            cursorCont: _cursorCont,
-            indentLevelCounts: indentLevelCounts,
-            onCheckboxTap: _handleCheckboxTap,
-            readOnly: widget.readOnly,
-            customStyleBuilder: widget.customStyleBuilder);
+block: node,
+controller: widget.controller,
+textDirection: _textDirection,
+scrollBottomInset: widget.scrollBottomInset,
+verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
+textSelection: widget.controller.selection,
+color: widget.selectionColor,
+styles: _styles,
+enableInteractiveSelection: widget.enableInteractiveSelection,
+hasFocus: _hasFocus,
+// NOTE: 2022/3/2 调整默认间距16=》8
+contentPadding: attrs.containsKey(Attribute.codeBlock.key)
+? const EdgeInsets.all(8)
+    : null,
+embedBuilder: widget.embedBuilder,
+linkActionPicker: _linkActionPicker,
+onLaunchUrl: widget.onLaunchUrl,
+cursorCont: _cursorCont,
+indentLevelCounts: indentLevelCounts,
+onCheckboxTap: _handleCheckboxTap,
+readOnly: widget.readOnly,
+mentionBuilder: widget.mentionBuilder,
+customStyleBuilder: widget.customStyleBuilder,
+emojiBuilder: widget.emojiBuilder,
+linkParse: widget.linkParse);
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
       } else {
@@ -684,6 +719,9 @@ class RawEditorState extends EditorState
       controller: controller,
       linkActionPicker: _linkActionPicker,
       onLaunchUrl: widget.onLaunchUrl,
+      mentionBuilder: widget.mentionBuilder,
+      emojiBuilder: widget.emojiBuilder,
+      linkParse: widget.linkParse,
     );
     final editableTextLine = EditableTextLine(
         node,
@@ -969,7 +1007,7 @@ class RawEditorState extends EditorState
       } else {
         _selectionOverlay!.update(textEditingValue);
       }
-    } else if (_hasFocus) {
+    } else if (_hasFocus || _isClickActivation) {
       _selectionOverlay = EditorTextSelectionOverlay(
         value: textEditingValue,
         context: context,
@@ -985,6 +1023,8 @@ class RawEditorState extends EditorState
       _selectionOverlay!.handlesVisible = _shouldShowSelectionHandles();
       _selectionOverlay!.showHandles();
     }
+
+    _isClickActivation = false;
   }
 
   void _handleFocusChanged() {
@@ -997,6 +1037,8 @@ class RawEditorState extends EditorState
     } else {
       WidgetsBinding.instance.removeObserver(this);
     }
+    // 修改，修复编辑器focus后selection不变的情况下光标丢失问题
+    // setState(() {});
     updateKeepAlive();
   }
 
@@ -1036,27 +1078,33 @@ class RawEditorState extends EditorState
           return;
         }
 
-        final viewport = RenderAbstractViewport.of(renderEditor);
-        final editorOffset =
-            renderEditor.localToGlobal(const Offset(0, 0), ancestor: viewport);
-        final offsetInViewport = _scrollController.offset + editorOffset.dy;
+        try {
+          final viewport = RenderAbstractViewport.of(renderEditor);
 
-        final offset = renderEditor.getOffsetToRevealCursor(
-          _scrollController.position.viewportDimension,
-          _scrollController.offset,
-          offsetInViewport,
-        );
-
-        if (offset != null) {
-          if (_disableScrollControllerAnimateOnce) {
-            _disableScrollControllerAnimateOnce = false;
-            return;
-          }
-          _scrollController.animateTo(
-            math.min(offset, _scrollController.position.maxScrollExtent),
-            duration: const Duration(milliseconds: 100),
-            curve: Curves.fastOutSlowIn,
+          /// FIXME： renderEditor.localToGlobal会出现异常
+          final editorOffset = renderEditor.localToGlobal(const Offset(0, 0),
+              ancestor: viewport);
+          final offsetInViewport = _scrollController.offset + editorOffset.dy;
+          await Future.delayed(Duration(milliseconds: 400));
+          final offset = renderEditor.getOffsetToRevealCursor(
+            _scrollController.position.viewportDimension,
+            _scrollController.offset,
+            offsetInViewport,
           );
+
+          if (offset != null) {
+            if (_disableScrollControllerAnimateOnce) {
+              _disableScrollControllerAnimateOnce = false;
+              return;
+            }
+            _scrollController.animateTo(
+              math.min(offset, _scrollController.position.maxScrollExtent),
+              duration: const Duration(milliseconds: 100),
+              curve: Curves.fastOutSlowIn,
+            );
+          }
+        } catch (e) {
+          debugPrint('显示光标出现错误: ${e.toString()}');
         }
       }
     });
@@ -1137,9 +1185,9 @@ class RawEditorState extends EditorState
   /// Copy current selection to [Clipboard].
   @override
   void copySelection(SelectionChangedCause cause) {
-    controller.copiedImageUrl = null;
-    _pastePlainText = controller.getPlainText();
-    _pasteStyle = controller.getAllIndividualSelectionStyles();
+    widget.controller.copiedImageUrl = null;
+    // _pastePlainText = widget.controller.getPlainText();
+    _pasteStyle = widget.controller.getAllIndividualSelectionStyles();
 
     final selection = textEditingValue.selection;
     final text = textEditingValue.text;
@@ -1150,6 +1198,7 @@ class RawEditorState extends EditorState
 
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
+      hideToolbar();
 
       // Collapse the selection and hide the toolbar and handles.
       userUpdateTextEditingValue(
@@ -1219,6 +1268,15 @@ class RawEditorState extends EditorState
     if (text != null) {
       _replaceText(
           ReplaceTextIntent(textEditingValue, text.text!, selection, cause));
+    final data = await Clipboard.getData(Clipboard.kTextPlain);
+    if (data == null) {
+      /// NOTE: 响应外部粘贴回调
+      widget.pasteExtension?.call();
+      return;
+    }
+
+    _replaceText(
+        ReplaceTextIntent(textEditingValue, data.text!, selection, cause));
 
       bringIntoView(textEditingValue.selection.extent);
 
@@ -1269,6 +1327,7 @@ class RawEditorState extends EditorState
 
     if (cause == SelectionChangedCause.toolbar) {
       bringIntoView(textEditingValue.selection.extent);
+      hideToolbar();
     }
   }
 
@@ -1450,6 +1509,12 @@ class RawEditorState extends EditorState
       }
     }
   }
+
+  // @override
+  void insertTextPlaceholder(Size size) {}
+
+  // @override
+  void removeTextPlaceholder() {}
 }
 
 class _Editor extends MultiChildRenderObjectWidget {
@@ -1468,6 +1533,7 @@ class _Editor extends MultiChildRenderObjectWidget {
     required this.scrollBottomInset,
     required this.cursorController,
     required this.floatingCursorDisabled,
+    this.isSelectionInViewport,
     this.padding = EdgeInsets.zero,
     this.maxContentWidth,
     this.offset,
@@ -1488,25 +1554,29 @@ class _Editor extends MultiChildRenderObjectWidget {
   final double? maxContentWidth;
   final CursorCont cursorController;
   final bool floatingCursorDisabled;
+  final IsSelectionInViewport? isSelectionInViewport;
 
   @override
   RenderEditor createRenderObject(BuildContext context) {
     return RenderEditor(
-        offset: offset,
-        document: document,
-        textDirection: textDirection,
-        hasFocus: hasFocus,
-        scrollable: scrollable,
-        selection: selection,
-        startHandleLayerLink: startHandleLayerLink,
-        endHandleLayerLink: endHandleLayerLink,
-        onSelectionChanged: onSelectionChanged,
-        onSelectionCompleted: onSelectionCompleted,
-        cursorController: cursorController,
-        padding: padding,
-        maxContentWidth: maxContentWidth,
-        scrollBottomInset: scrollBottomInset,
-        floatingCursorDisabled: floatingCursorDisabled);
+      key: key as GlobalKey,
+      offset: offset,
+      document: document,
+      textDirection: textDirection,
+      hasFocus: hasFocus,
+      scrollable: scrollable,
+      selection: selection,
+      startHandleLayerLink: startHandleLayerLink,
+      endHandleLayerLink: endHandleLayerLink,
+      onSelectionChanged: onSelectionChanged,
+      onSelectionCompleted: onSelectionCompleted,
+      cursorController: cursorController,
+      padding: padding,
+      maxContentWidth: maxContentWidth,
+      scrollBottomInset: scrollBottomInset,
+      floatingCursorDisabled: floatingCursorDisabled,
+      isSelectionInViewport: isSelectionInViewport,
+    );
   }
 
   @override

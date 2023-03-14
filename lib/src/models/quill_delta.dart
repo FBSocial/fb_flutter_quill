@@ -5,6 +5,8 @@ import 'package:collection/collection.dart';
 import 'package:diff_match_patch/diff_match_patch.dart' as dmp;
 import 'package:quiver/core.dart';
 
+import '../models/documents/nodes/embeddable.dart';
+
 const _attributeEquality = DeepCollectionEquality();
 const _valueEquality = DeepCollectionEquality();
 
@@ -69,6 +71,7 @@ class Operation {
       _attributes == null ? null : Map<String, dynamic>.from(_attributes!);
   final Map<String, dynamic>? _attributes;
 
+  // 修改
   /// Creates new [Operation] from JSON payload.
   ///
   /// If `dataDecoder` parameter is not null then it is used to additionally
@@ -78,6 +81,26 @@ class Operation {
     final map = Map<String, dynamic>.from(data);
     if (map.containsKey(Operation.insertKey)) {
       final data = dataDecoder(map[Operation.insertKey]);
+
+      final Map<String, dynamic>? attributes =
+          map[Operation.attributesKey] == null
+              ? null
+              : Map.from(map[Operation.attributesKey]);
+      // if (attributes?.containsKey('at') == true) {
+      //   final mentionValue = data is String ? data : '';
+      //   final embed =
+      //       MentionEmbed.fromAttribute(attributes!['at'], '@', mentionValue);
+      //   return Operation._(Operation.insertKey, mentionValue.length,
+      //       embed.toJson(), attributes);
+      // }
+      // if (attributes?.containsKey('channel') == true) {
+      //   final mentionValue = data is String ? data : '';
+      //   final embed = MentionEmbed.fromAttribute(
+      //       attributes!['channel'], '#', mentionValue);
+      //   return Operation._(Operation.insertKey, mentionValue.length,
+      //       embed.toJson(), attributes);
+      // }
+
       final dataLength = data is String ? data.length : 1;
       return Operation._(
           Operation.insertKey, dataLength, data, map[Operation.attributesKey]);
@@ -92,10 +115,123 @@ class Operation {
     throw ArgumentError.value(data, 'Invalid data for Delta operation.');
   }
 
+  // 修改，添加fromJson2方法，编辑器的flutter版本 @和channel当作普通普通文本处理，所以不需要转成MentionEmbed
+  static Operation fromJson2(Map data, {DataDecoder? dataDecoder}) {
+    dataDecoder ??= _passThroughDataDecoder;
+    final map = Map<String, dynamic>.from(data);
+    if (map.containsKey(Operation.insertKey)) {
+      final data = dataDecoder(map[Operation.insertKey]);
+
+      // final Map<String, dynamic>? attributes = map[Operation.attributesKey] == null
+      //     ? null : Map.from(map[Operation.attributesKey]);
+
+      // if (attributes?.containsKey('at') == true) {
+      //   final mentionValue = data is String ? data : '';
+      //   final embed = MentionEmbed.fromAttribute(attributes!['at'], '@', mentionValue);
+      //   return Operation._(Operation.insertKey, 1, embed.toFormalJson(), attributes);
+      // }
+      // if (attributes?.containsKey('channel') == true) {
+      //   final mentionValue = data is String ? data : '';
+      //   final embed = MentionEmbed.fromAttribute(attributes!['channel'], '#', mentionValue);
+      //   return Operation._(Operation.insertKey, 1, embed.toFormalJson(), attributes);
+      // }
+
+      final dataLength = data is String ? data.length : 1;
+      return Operation._(
+          Operation.insertKey, dataLength, data, map[Operation.attributesKey]);
+    } else if (map.containsKey(Operation.deleteKey)) {
+      final int? length = map[Operation.deleteKey];
+      return Operation._(Operation.deleteKey, length, '', null);
+    } else if (map.containsKey(Operation.retainKey)) {
+      final int? length = map[Operation.retainKey];
+      return Operation._(
+          Operation.retainKey, length, '', map[Operation.attributesKey]);
+    }
+    throw ArgumentError.value(data, 'Invalid data for Delta operation.');
+  }
+
+  // 修改
   /// Returns JSON-serializable representation of this operation.
   Map<String, dynamic> toJson() {
     final json = {key: value};
     if (_attributes != null) json[Operation.attributesKey] = attributes;
+
+    if (key == Operation.insertKey) {
+      // Embeddable.
+      if (value is Map) {
+        final embed = Embeddable.fromJson(value);
+        if (embed is MentionEmbed) {
+          json[key] = embed.value;
+          Map<String, dynamic> attrMap =
+              attributes != null ? Map.from(attributes!) : {};
+          attrMap[embed.attributeKey] = embed.id;
+          json[Operation.attributesKey] = attrMap;
+        } else {
+          json[key] = embed.toJson();
+        }
+      } else {
+        // Check if data is mention embed.
+        if (attributes != null && attributes!.containsKey('at')) {
+          final mentionId =
+              attributes!['at'] is String ? attributes!['at'] as String : '';
+          final mentionValue = value is String ? value as String : '';
+          final embed =
+              MentionEmbed.fromAttribute(mentionId, '@', mentionValue);
+          json[key] = embed.value;
+
+          Map<String, dynamic> attrMap =
+              attributes != null ? Map.from(attributes!) : {};
+          attrMap[embed.attributeKey] = embed.id;
+          json[Operation.attributesKey] = attrMap;
+        }
+        if (attributes != null && attributes!.containsKey('channel')) {
+          final mentionId = attributes!['channel'] is String
+              ? attributes!['channel'] as String
+              : '';
+          final mentionValue = value is String ? value as String : '';
+          final embed =
+              MentionEmbed.fromAttribute(mentionId, '#', mentionValue);
+          json[key] = embed.value;
+
+          Map<String, dynamic> attrMap =
+              attributes != null ? Map.from(attributes!) : {};
+          attrMap[embed.attributeKey] = embed.id;
+          json[Operation.attributesKey] = attrMap;
+        }
+      }
+    }
+    return json;
+  }
+
+  // 修改
+  Map<String, dynamic> toFormalJson() {
+    final json = {key: value};
+    if (_attributes != null) json[Operation.attributesKey] = attributes;
+    if (key == Operation.insertKey) {
+      // Embeddable.
+      if (value is Map) {
+        json[key] = Embeddable.fromJson(value).toFormalJson();
+      } else {
+        // Check if data is mention embed.
+        if (attributes != null && attributes!.containsKey('at')) {
+          final mentionId =
+              attributes!['at'] is String ? attributes!['at'] as String : '';
+          final mentionValue = value is String ? value as String : '';
+          final embed =
+              MentionEmbed.fromAttribute(mentionId, '@', mentionValue);
+          json[key] = embed.toFormalJson();
+        }
+        if (attributes != null && attributes!.containsKey('channel')) {
+          final mentionId = attributes!['channel'] is String
+              ? attributes!['channel'] as String
+              : '';
+          final mentionValue = value is String ? value as String : '';
+          final embed =
+              MentionEmbed.fromAttribute(mentionId, '#', mentionValue);
+          json[key] = embed.toFormalJson();
+        }
+      }
+    }
     return json;
   }
 
@@ -127,14 +263,24 @@ class Operation {
   /// Returns `true` is this operation is not empty.
   bool get isNotEmpty => length! > 0;
 
+  // 修改
   @override
   bool operator ==(other) {
     if (identical(this, other)) return true;
     if (other is! Operation) return false;
     final typedOther = other;
+    var isValueEqual = _valueEquality.equals(data, typedOther.data);
+    if (data is Map<String, dynamic> && other.data is Map<String, dynamic>) {
+      isValueEqual = _valueEquality.equals(
+        Embeddable.fromJson(data as Map<String, dynamic>).toFormalJson(),
+        Embeddable.fromJson(typedOther.data as Map<String, dynamic>)
+            .toFormalJson(),
+      );
+    }
     return key == typedOther.key &&
         length == typedOther.length &&
-        _valueEquality.equals(data, typedOther.data) &&
+        isValueEqual &&
+        /* _valueEquality.equals(data, typedOther.data) && */
         hasSameAttributes(typedOther);
   }
 
@@ -288,8 +434,80 @@ class Delta {
   /// Returns list of operations in this delta.
   List<Operation> toList() => List.from(_operations);
 
+  // 修改
+  List toFormalJson() =>
+      toList().map((operation) => operation.toFormalJson()).toList();
+
   /// Returns JSON-serializable version of this delta.
-  List toJson() => toList().map((operation) => operation.toJson()).toList();
+  List toJson() {
+    final operationList = toList();
+    final jsonList = <Map<String, dynamic>>[];
+    for (var i = 0; i < operationList.length; i++) {
+      final operation = operationList[i];
+      if (operation.key == Operation.insertKey) {
+        if (operation.value is Map) {
+          // Embeddable
+          final embedType = Embeddable.fromJson(operation.value).type;
+          final isBlockEmbed = embedType == 'image' ||
+              embedType == 'video' ||
+              embedType == 'divider';
+          final next = i < length - 1 ? operationList[i + 1] : null;
+          if (isBlockEmbed && next != null && next.value is Map) {
+            final nextEmbedType = Embeddable.fromJson(next.value).type;
+            final isNextBlockEmbed = /*nextEmbedType == 'image' ||*/
+                nextEmbedType == 'video' || nextEmbedType == 'divider';
+            if (isNextBlockEmbed) {
+              jsonList.add(operation.toJson());
+
+              /// NOTE: 2022/3/27 在不清楚业务逻辑的情况下，保守操作，进行排除
+              if (nextEmbedType != 'image') {
+                jsonList.add({Operation.insertKey: '\n'});
+              }
+              continue;
+            }
+          }
+        } else {
+          // Text
+          final index = operationList.indexOf(operation);
+          final prev = i > 0 ? operationList[i - 1] : null;
+          final next = index < length - 1 ? operationList[index + 1] : null;
+          final operationJson = operation.toJson();
+          String? operationValue;
+          // If prev is image.
+          if (prev != null && prev.value is Map) {
+            final embedType = Embeddable.fromJson(prev.value).type;
+            final isBlockEmbed = embedType == 'image' ||
+                embedType == 'video' ||
+                embedType == 'divider';
+            // 修改
+            if (isBlockEmbed &&
+                operation.value is String &&
+                !(operation.value as String).startsWith('\n')) {
+              operationValue = '\n${operation.value}';
+            }
+          }
+          // If next is image.
+          if (next != null && next.value is Map) {
+            final embedType = Embeddable.fromJson(next.value).type;
+            final isBlockEmbed = embedType == 'image' ||
+                embedType == 'video' ||
+                embedType == 'divider';
+            if (isBlockEmbed && !operation.value.endsWith('\n')) {
+              operationValue =
+                  '${(operationValue == null ? operation.value : operationValue)}\n';
+            }
+          }
+          if (operationValue != null) {
+            operationJson[Operation.insertKey] = operationValue;
+            jsonList.add(operationJson);
+            continue;
+          }
+        }
+      }
+      jsonList.add(operation.toJson());
+    }
+    return jsonList;
+  }
 
   /// Returns `true` if this delta is empty.
   bool get isEmpty => _operations.isEmpty;
@@ -726,6 +944,13 @@ class Delta {
 
   @override
   String toString() => _operations.join('\n');
+
+  // 修改，添加fromJson2，使用flutter版本编辑器时使用此方法
+  static Delta fromJson2(List data, {DataDecoder? dataDecoder}) {
+    return Delta._(data
+        .map((op) => Operation.fromJson2(op, dataDecoder: dataDecoder))
+        .toList());
+  }
 }
 
 /// Specialized iterator for [Delta]s.

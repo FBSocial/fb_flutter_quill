@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:ui';
 
 import 'package:flutter/animation.dart';
@@ -13,6 +14,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
     implements TextInputClient {
   TextInputConnection? _textInputConnection;
   TextEditingValue? _lastKnownRemoteTextEditingValue;
+  double _composingX = 0; //输入法选词弹窗x坐标
 
   /// Whether to create an input connection with the platform for text editing
   /// or not.
@@ -39,6 +41,9 @@ mixin RawEditorStateTextInputClientMixin on EditorState
     if (widget.focusNode.hasFocus && widget.focusNode.consumeKeyboardToken()) {
       openConnectionIfNeeded();
     } else if (!widget.focusNode.hasFocus) {
+      /// FIXME: 弹窗会导致焦点失去，在此处进行
+      // const newSelection = TextSelection.collapsed(offset: 0);
+      // widget.controller.updateSelection(newSelection, ChangeSource.LOCAL);
       closeConnectionIfNeeded();
     }
   }
@@ -63,6 +68,10 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       );
 
       _updateSizeAndTransform();
+      if (Platform.isWindows || Platform.isMacOS) {
+        _updateComposingRectIfNeeded();
+        _updateCaretRectIfNeeded();
+      }
       _textInputConnection!.setEditingState(_lastKnownRemoteTextEditingValue!);
     }
 
@@ -143,6 +152,16 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       _lastKnownRemoteTextEditingValue = value;
       return;
     }
+
+    // pc端中文组合输入法,过程中回调可能会导致富文本数据和光标位置异常,所以将中间组合过程忽略掉,
+    // 只取最后结果
+    /* 加了这段逻辑会影响系统emoji的预输入状态，所以暂时注释了
+    if (Platform.isWindows || Platform.isMacOS) {
+      if (!value.composing.isCollapsed) {
+        return;
+      }
+    }
+    */
 
     final effectiveLastKnownValue = _lastKnownRemoteTextEditingValue!;
     _lastKnownRemoteTextEditingValue = value;
@@ -292,7 +311,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
     if (!hasConnection) {
       return;
     }
-    _textInputConnection!.connectionClosedReceived();
+    _textInputConnection?.connectionClosedReceived();
     _textInputConnection = null;
     _lastKnownRemoteTextEditingValue = null;
   }
@@ -309,6 +328,70 @@ mixin RawEditorStateTextInputClientMixin on EditorState
         final transform = renderEditor.getTransformTo(null);
         _textInputConnection?.setEditableSizeAndTransform(size, transform);
       });
+    }
+  }
+
+  // Sends the current composing rect to the iOS text input plugin via the text
+  // input channel. We need to keep sending the information even if no text is
+  // currently marked, as the information usually lags behind. The text input
+  // plugin needs to estimate the composing rect based on the latest caret rect,
+  // when the composing rect info didn't arrive in time.
+  void _updateComposingRectIfNeeded() {
+    final composingRange = textEditingValue.composing;
+    if (hasConnection) {
+      if (!mounted) {
+        return;
+      }
+      Rect? composingRect =
+          renderEditor.getRectForComposingRange(composingRange);
+      // Send the caret location instead if there's no marked text yet.
+      if (composingRect == null) {
+        assert(!composingRange.isValid || composingRange.isCollapsed);
+        final offset = composingRange.isValid ? composingRange.start : 0;
+        composingRect =
+            renderEditor.getLocalRectForCaret(TextPosition(offset: offset));
+      } else if (Platform.isWindows) {
+        //print('composingRect ======== x:${composingRect?.left} y:${composingRect?.top} w:${composingRect?.width} h:${composingRect?.height}');
+        //升级到flutter3.3.8后, 在windows平台renderEditor.getRectForComposingRange函数内部的_paintOffset值一直为(0,0)
+        //返回出来的composingRect的x一直是0, 那么输入法选词弹窗的x坐标就要偏移到composingRect的右边
+        if (_lastKnownRemoteTextEditingValue?.composing?.isCollapsed ?? false) {
+          //x坐标在落下光标且打字输入开始前记录位置,然后正在打字时不跟随预输入文字块光标跳动，保持在开始输入的位置
+          _composingX = composingRect?.right ?? 0;
+        }
+        final currentTextPosition =
+            TextPosition(offset: renderEditor.selection.baseOffset);
+        final caretRect =
+            renderEditor.getLocalRectForCaret(currentTextPosition);
+        //print('caretRect ======== x:${caretRect.left} y:${caretRect.top} w:${caretRect.width} h:${caretRect.height}');
+        //弹窗的y坐标粗略计算：[文字块顶部top + 预输入文字的高度] => 就是在预输入文字块的下方
+        double composingY = composingRect?.top ?? 0;
+        composingY += caretRect.height;
+        composingRect = Rect.fromLTWH(_composingX, composingY,
+            composingRect?.width ?? 0, composingRect?.height ?? 0);
+      }
+      _textInputConnection?.setComposingRect(composingRect);
+
+      SchedulerBinding.instance
+          ?.addPostFrameCallback((_) => _updateComposingRectIfNeeded());
+    }
+  }
+
+  void _updateCaretRectIfNeeded() {
+    if (hasConnection) {
+      if (!mounted) {
+        return;
+      }
+      if (renderEditor.selection.isValid &&
+          renderEditor.selection.isCollapsed) {
+        final currentTextPosition =
+            TextPosition(offset: renderEditor.selection.baseOffset);
+        final caretRect =
+            renderEditor.getLocalRectForCaret(currentTextPosition);
+        _textInputConnection?.setCaretRect(caretRect);
+      }
+
+      SchedulerBinding.instance
+          ?.addPostFrameCallback((_) => _updateCaretRectIfNeeded());
     }
   }
 }
