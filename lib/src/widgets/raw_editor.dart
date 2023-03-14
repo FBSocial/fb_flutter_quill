@@ -83,8 +83,7 @@ class RawEditor extends StatefulWidget {
       this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
       this.customStyleBuilder,
       this.floatingCursorDisabled = false,
-      this.onImagePaste})
-      this.floatingCursorDisabled = false,
+      this.onImagePaste,
       this.mentionBuilder,
       this.emojiBuilder,
       this.pasteExtension,
@@ -1070,7 +1069,7 @@ linkParse: widget.linkParse);
     }
 
     _showCaretOnScreenScheduled = true;
-    SchedulerBinding.instance.addPostFrameCallback((_) {
+    SchedulerBinding.instance.addPostFrameCallback((_) async {
       if (widget.scrollable || _scrollController.hasClients) {
         _showCaretOnScreenScheduled = false;
 
@@ -1492,29 +1491,26 @@ linkParse: widget.linkParse);
     // and this package does not implement this feature
   }
 
-  @override
-  void didChangeInputControl(
-      TextInputControl? oldControl, TextInputControl? newControl) {
-    // TODO: implement didChangeInputControl
-  }
+  // 适配 flutter3.3.10 先注释
+  // @override
+  // void didChangeInputControl(
+  //     TextInputControl? oldControl, TextInputControl? newControl) {
+  //   // TODO: implement didChangeInputControl
+  // }
 
   @override
   void performSelector(String selectorName) {
-    final intent = intentForMacOSSelector(selectorName);
-
-    if (intent != null) {
-      final primaryContext = primaryFocus?.context;
-      if (primaryContext != null) {
-        Actions.invoke(primaryContext, intent);
-      }
-    }
+    // 适配 flutter3.3.10 先注释
+    // final intent = intentForMacOSSelector(selectorName);
+    //
+    // if (intent != null) {
+    //   final primaryContext = primaryFocus?.context;
+    //   if (primaryContext != null) {
+    //     Actions.invoke(primaryContext, intent);
+    //   }
+    // }
   }
 
-  // @override
-  void insertTextPlaceholder(Size size) {}
-
-  // @override
-  void removeTextPlaceholder() {}
 }
 
 class _Editor extends MultiChildRenderObjectWidget {

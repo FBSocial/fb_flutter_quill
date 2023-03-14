@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter/rendering.dart';
 import 'package:tuple/tuple.dart';
 
+import '../../extensions.dart';
+import '../../flutter_quill.dart';
 import '../models/documents/attribute.dart';
 import '../models/documents/nodes/block.dart';
 import '../utils/delta.dart';

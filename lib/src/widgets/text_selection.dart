@@ -4,6 +4,7 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../models/documents/nodes/node.dart';
@@ -92,7 +93,7 @@ class EditorTextSelectionOverlay {
     clipboardStatus.update();
 
     _toolbarController = AnimationController(
-        duration: const Duration(milliseconds: 150), vsync: overlay);
+        duration: const Duration(milliseconds: 150), vsync: overlay!);
   }
 
   TextEditingValue value;
@@ -230,7 +231,7 @@ class EditorTextSelectionOverlay {
     assert(toolbar == null);
     toolbar = OverlayEntry(builder: _buildToolbar);
     Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)
-        .insert(toolbar!);
+        ?.insert(toolbar!);
     _toolbarController.forward(from: 0);
 
     // make sure handles are visible as well
@@ -421,7 +422,7 @@ class EditorTextSelectionOverlay {
     ];
 
     Overlay.of(context, rootOverlay: true, debugRequiredFor: debugRequiredFor)
-        .insertAll(_handles!);
+        ?.insertAll(_handles!);
   }
 
   /// Causes the overlay to update its rendering.
@@ -710,7 +711,6 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
     this.onSecondaryTapDown,
     this.onSingleTapUp,
     this.onSingleTapCancel,
-    this.onSecondaryTapDown,
     this.onSecondarySingleTapUp,
     this.onSecondarySingleTapCancel,
     this.onSecondaryDoubleTapDown,
@@ -755,8 +755,6 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
   /// another gesture from the touch is recognized.
   final GestureTapCancelCallback? onSingleTapCancel;
 
-  /// onTapDown for mouse right click
-  final GestureTapDownCallback? onSecondaryTapDown;
 
   /// onTapUp for mouse right click
   final GestureTapUpCallback? onSecondarySingleTapUp;
@@ -991,9 +989,9 @@ class _EditorTextSelectionGestureDetectorState
     widget.onSecondaryTap?.call();
   }
 
-  void _handleSecondaryTapDown(TapDownDetails details) {
-    widget.onSecondaryTapDown?.call(details);
-  }
+  // void _handleSecondaryTapDown(TapDownDetails details) {
+  //   widget.onSecondaryTapDown?.call(details);
+  // }
 
   void _doubleTapTimeout() {
     _doubleTapTimer = null;
@@ -1024,9 +1022,7 @@ class _EditorTextSelectionGestureDetectorState
           ..onTapUp = _handleTapUp
           ..onSecondaryTap = _handleSecondaryTap
           ..onSecondaryTapDown = _handleSecondaryTapDown
-          ..onTapCancel = _handleTapCancel;
           ..onTapCancel = _handleTapCancel
-          ..onSecondaryTapDown = _handleSecondaryTapDown
           ..onSecondaryTapUp = _handleSecondaryTapUp
           ..onSecondaryTapCancel = _handleSecondaryTapCancel;
       },
