@@ -1274,8 +1274,6 @@ linkParse: widget.linkParse);
       return;
     }
 
-    _replaceText(
-        ReplaceTextIntent(textEditingValue, data.text!, selection, cause));
 
       bringIntoView(textEditingValue.selection.extent);
 
