@@ -40,6 +40,11 @@ class _ArrowIndicatedButtonListState extends State<ArrowIndicatedButtonList>
 
   @override
   Widget build(BuildContext context) {
+    /// 按钮少的时候不需要左右按钮
+    if (widget.buttons.length <= 4) {
+      _showLeftArrow = false;
+      _showRightArrow = false;
+    }
     return Row(
       children: <Widget>[
         _buildLeftArrow(),
