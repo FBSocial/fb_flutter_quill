@@ -1323,8 +1323,10 @@ linkParse: widget.linkParse);
     );
 
     if (cause == SelectionChangedCause.toolbar) {
-      bringIntoView(textEditingValue.selection.extent);
-      hideToolbar();
+      // bringIntoView(textEditingValue.selection.extent);
+      // hideToolbar();
+      ///全选后的面板
+      bringIntoView(textEditingValue.selection.base);
     }
   }
 
