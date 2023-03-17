@@ -951,6 +951,8 @@ linkParse: widget.linkParse);
     if (ignoreFocus || _keyboardVisible) {
       _onChangeTextEditingValue(ignoreFocus);
     } else {
+      // 无论聚焦与否，编辑器的位置和光标，滑动都需要进行修正
+      _onChangeTextEditingValue(ignoreFocus);
       requestKeyboard();
       if (mounted) {
         setState(() {

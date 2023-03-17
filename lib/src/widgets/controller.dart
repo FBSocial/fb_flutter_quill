@@ -385,4 +385,10 @@ class QuillController extends ChangeNotifier {
 
   // Notify toolbar buttons directly with attributes
   Map<String, Attribute> toolbarButtonToggler = {};
+
+  ///仅用于通知数据修改，位置转移等
+  void onlyNotify(){
+    notifyListeners();
+  }
+
 }
