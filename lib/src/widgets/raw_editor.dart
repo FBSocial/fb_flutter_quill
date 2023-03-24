@@ -1493,24 +1493,24 @@ linkParse: widget.linkParse);
     // and this package does not implement this feature
   }
 
-  // 适配 flutter3.3.10 先注释
-  // @override
-  // void didChangeInputControl(
-  //     TextInputControl? oldControl, TextInputControl? newControl) {
-  //   // TODO: implement didChangeInputControl
-  // }
+//  适配 flutter3.3.10 先注释
+  @override
+  void didChangeInputControl(
+      TextInputControl? oldControl, TextInputControl? newControl) {
+    // TODO: implement didChangeInputControl
+  }
 
   @override
   void performSelector(String selectorName) {
     // 适配 flutter3.3.10 先注释
-    // final intent = intentForMacOSSelector(selectorName);
-    //
-    // if (intent != null) {
-    //   final primaryContext = primaryFocus?.context;
-    //   if (primaryContext != null) {
-    //     Actions.invoke(primaryContext, intent);
-    //   }
-    // }
+    final intent = intentForMacOSSelector(selectorName);
+
+    if (intent != null) {
+      final primaryContext = primaryFocus?.context;
+      if (primaryContext != null) {
+        Actions.invoke(primaryContext, intent);
+      }
+    }
   }
 
 }
