@@ -387,8 +387,7 @@ class QuillController extends ChangeNotifier {
   Map<String, Attribute> toolbarButtonToggler = {};
 
   ///仅用于通知数据修改，位置转移等
-  void onlyNotify(){
+  void onlyNotify() {
     notifyListeners();
   }
-
 }

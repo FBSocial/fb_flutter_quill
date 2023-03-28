@@ -195,7 +195,6 @@ class DefaultStyles {
     final baseStyle = defaultTextStyle.style.copyWith(
       fontSize: 16,
       height: 1.5,
-
       decoration: TextDecoration.none,
     );
     // NOTE: 2022/3/4 修改baseSpacing为0（待验证）

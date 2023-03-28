@@ -43,52 +43,53 @@ import 'text_selection.dart';
 import 'toolbar/search_dialog.dart';
 
 class RawEditor extends StatefulWidget {
-  const RawEditor(
-      {required this.controller,
-      required this.focusNode,
-      required this.scrollController,
-      required this.scrollBottomInset,
-      required this.cursorStyle,
-      required this.selectionColor,
-      required this.selectionCtrls,
-        required this.embedBuilder,
-      this.isSelectionInViewport,
-        this.caretOffset = 0,
-      Key? key,
-      this.scrollable = true,
-      this.padding = EdgeInsets.zero,
-      this.readOnly = false,
-      this.placeholder,
-      this.onLaunchUrl,
-      this.toolbarOptions = const ToolbarOptions(
-        copy: true,
-        cut: true,
-        paste: true,
-        selectAll: true,
-      ),
-      this.showSelectionHandles = false,
-      bool? showCursor,
-      this.textCapitalization = TextCapitalization.none,
-      this.maxHeight,
-      this.minHeight,
-      this.maxContentWidth,
-      this.customStyles,
-      this.customShortcuts,
-      this.customActions,
-      this.expands = false,
-      this.autoFocus = false,
-      this.keyboardAppearance = Brightness.light,
-      this.enableInteractiveSelection = true,
-      this.scrollPhysics,
-      this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
-      this.customStyleBuilder,
-      this.floatingCursorDisabled = false,
-      this.onImagePaste,
-      this.mentionBuilder,
-      this.emojiBuilder,
-      this.pasteExtension,
-      this.linkParse,})
-      : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
+  const RawEditor({
+    required this.controller,
+    required this.focusNode,
+    required this.scrollController,
+    required this.scrollBottomInset,
+    required this.cursorStyle,
+    required this.selectionColor,
+    required this.selectionCtrls,
+    required this.embedBuilder,
+    this.isSelectionInViewport,
+    this.caretOffset = 0,
+    Key? key,
+    this.scrollable = true,
+    this.padding = EdgeInsets.zero,
+    this.readOnly = false,
+    this.placeholder,
+    this.onLaunchUrl,
+    this.toolbarOptions = const ToolbarOptions(
+      copy: true,
+      cut: true,
+      paste: true,
+      selectAll: true,
+    ),
+    this.showSelectionHandles = false,
+    bool? showCursor,
+    this.textCapitalization = TextCapitalization.none,
+    this.maxHeight,
+    this.minHeight,
+    this.maxContentWidth,
+    this.customStyles,
+    this.customShortcuts,
+    this.customActions,
+    this.expands = false,
+    this.autoFocus = false,
+    this.keyboardAppearance = Brightness.light,
+    this.enableInteractiveSelection = true,
+    this.scrollPhysics,
+    this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
+    this.customStyleBuilder,
+    this.floatingCursorDisabled = false,
+    this.onImagePaste,
+    this.mentionBuilder,
+    this.emojiBuilder,
+    this.pasteExtension,
+    this.linkParse,
+    this.cursorPositionCallback,
+  })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
             'maxHeight cannot be null'),
@@ -107,6 +108,9 @@ class RawEditor extends StatefulWidget {
   // 修改，添加是否可编辑参数
   // final MouseCursor? mouseCursors;
   final VoidCallback? pasteExtension;
+
+  /// 光标位置回调函数
+  final void Function(double x, double y)? cursorPositionCallback;
 
   /// Controls the document being edited.
   final QuillController controller;
@@ -291,6 +295,33 @@ class RawEditorState extends EditorState
 
   // Cursors
   late CursorCont _cursorCont;
+
+  double _cursorX = 0;
+  double _cursorY = 0;
+  void updateCursorPostion(double? x, double? y) {
+    var hasUpdate = false;
+
+    /// 判断光标x坐标值是否更新
+    if (x != null) {
+      if (_cursorX != x) {
+        hasUpdate = true;
+        _cursorX = x;
+        print('---- updateCursorPostion x: $x');
+      }
+    }
+
+    /// 判断光标y坐标值是否更新
+    if (y != null) {
+      if (_cursorY != y) {
+        hasUpdate = true;
+        _cursorY = y;
+        print('---- updateCursorPostion y: $y');
+      }
+    }
+    if (hasUpdate && widget.cursorPositionCallback != null) {
+      widget.cursorPositionCallback!.call(_cursorX, _cursorY);
+    }
+  }
 
   QuillController get controller => widget.controller;
 
@@ -672,31 +703,33 @@ class RawEditorState extends EditorState
       } else if (node is Block) {
         final attrs = node.style.attributes;
         final editableTextBlock = EditableTextBlock(
-block: node,
-controller: widget.controller,
-textDirection: _textDirection,
-scrollBottomInset: widget.scrollBottomInset,
-verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
-textSelection: widget.controller.selection,
-color: widget.selectionColor,
-styles: _styles,
-enableInteractiveSelection: widget.enableInteractiveSelection,
-hasFocus: _hasFocus,
-// NOTE: 2022/3/2 调整默认间距16=》8
-contentPadding: attrs.containsKey(Attribute.codeBlock.key)
-? const EdgeInsets.all(8)
-    : null,
-embedBuilder: widget.embedBuilder,
-linkActionPicker: _linkActionPicker,
-onLaunchUrl: widget.onLaunchUrl,
-cursorCont: _cursorCont,
-indentLevelCounts: indentLevelCounts,
-onCheckboxTap: _handleCheckboxTap,
-readOnly: widget.readOnly,
-mentionBuilder: widget.mentionBuilder,
-customStyleBuilder: widget.customStyleBuilder,
-emojiBuilder: widget.emojiBuilder,
-linkParse: widget.linkParse);
+          block: node,
+          controller: widget.controller,
+          textDirection: _textDirection,
+          scrollBottomInset: widget.scrollBottomInset,
+          verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
+          textSelection: widget.controller.selection,
+          color: widget.selectionColor,
+          styles: _styles,
+          enableInteractiveSelection: widget.enableInteractiveSelection,
+          hasFocus: _hasFocus,
+          // NOTE: 2022/3/2 调整默认间距16=》8
+          contentPadding: attrs.containsKey(Attribute.codeBlock.key)
+              ? const EdgeInsets.all(8)
+              : null,
+          embedBuilder: widget.embedBuilder,
+          linkActionPicker: _linkActionPicker,
+          onLaunchUrl: widget.onLaunchUrl,
+          cursorCont: _cursorCont,
+          indentLevelCounts: indentLevelCounts,
+          onCheckboxTap: _handleCheckboxTap,
+          readOnly: widget.readOnly,
+          mentionBuilder: widget.mentionBuilder,
+          customStyleBuilder: widget.customStyleBuilder,
+          emojiBuilder: widget.emojiBuilder,
+          linkParse: widget.linkParse,
+          cursorPositionCallback: updateCursorPostion,
+        );
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
       } else {
@@ -723,18 +756,20 @@ linkParse: widget.linkParse);
       linkParse: widget.linkParse,
     );
     final editableTextLine = EditableTextLine(
-        node,
-        null,
-        textLine,
-        0,
-        _getVerticalSpacingForLine(node, _styles),
-        _textDirection,
-        controller.selection,
-        widget.selectionColor,
-        widget.enableInteractiveSelection,
-        _hasFocus,
-        MediaQuery.of(context).devicePixelRatio,
-        _cursorCont);
+      node,
+      null,
+      textLine,
+      0,
+      _getVerticalSpacingForLine(node, _styles),
+      _textDirection,
+      controller.selection,
+      widget.selectionColor,
+      widget.enableInteractiveSelection,
+      _hasFocus,
+      MediaQuery.of(context).devicePixelRatio,
+      _cursorCont,
+      updateCursorPosCallback: updateCursorPostion,
+    );
     return editableTextLine;
   }
 
@@ -1269,13 +1304,12 @@ linkParse: widget.linkParse);
     if (text != null) {
       _replaceText(
           ReplaceTextIntent(textEditingValue, text.text!, selection, cause));
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data == null) {
-      /// NOTE: 响应外部粘贴回调
-      widget.pasteExtension?.call();
-      return;
-    }
-
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (data == null) {
+        /// NOTE: 响应外部粘贴回调
+        widget.pasteExtension?.call();
+        return;
+      }
 
       bringIntoView(textEditingValue.selection.extent);
 
@@ -1512,7 +1546,6 @@ linkParse: widget.linkParse);
     //   }
     // }
   }
-
 }
 
 class _Editor extends MultiChildRenderObjectWidget {

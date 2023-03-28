@@ -45,6 +45,7 @@ class TextLine extends StatefulWidget {
     this.mentionBuilder,
     this.emojiBuilder,
     this.linkParse,
+    this.cursorPositionCallback,
     Key? key,
   }) : super(key: key);
 
@@ -60,6 +61,7 @@ class TextLine extends StatefulWidget {
   final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
   final InlineSpan? Function(String)? emojiBuilder;
   final void Function(String)? linkParse;
+  final void Function(double?, double?)? cursorPositionCallback;
 
   @override
   State<TextLine> createState() => _TextLineState();
@@ -626,8 +628,9 @@ class EditableTextLine extends RenderObjectWidget {
     this.enableInteractiveSelection,
     this.hasFocus,
     this.devicePixelRatio,
-    this.cursorCont,
-  );
+    this.cursorCont, {
+    @required this.updateCursorPosCallback,
+  });
 
   final Line line;
   final Widget? leading;
@@ -641,6 +644,7 @@ class EditableTextLine extends RenderObjectWidget {
   final bool hasFocus;
   final double devicePixelRatio;
   final CursorCont cursorCont;
+  final void Function(double?, double?)? updateCursorPosCallback;
 
   @override
   RenderObjectElement createElement() {
@@ -651,16 +655,18 @@ class EditableTextLine extends RenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) {
     final defaultStyles = DefaultStyles.getInstance(context);
     return RenderEditableTextLine(
-        line,
-        textDirection,
-        textSelection,
-        enableInteractiveSelection,
-        hasFocus,
-        devicePixelRatio,
-        _getPadding(),
-        color,
-        cursorCont,
-        defaultStyles.inlineCode!);
+      line,
+      textDirection,
+      textSelection,
+      enableInteractiveSelection,
+      hasFocus,
+      devicePixelRatio,
+      _getPadding(),
+      color,
+      cursorCont,
+      defaultStyles.inlineCode!,
+      updateCursorPosCallback: updateCursorPosCallback,
+    );
   }
 
   @override
@@ -702,7 +708,8 @@ class RenderEditableTextLine extends RenderEditableBox {
       this.padding,
       this.color,
       this.cursorCont,
-      this.inlineCodeStyle);
+      this.inlineCodeStyle,
+      {@required this.updateCursorPosCallback});
 
   RenderBox? _leading;
   RenderContentProxyBox? _body;
@@ -719,6 +726,10 @@ class RenderEditableTextLine extends RenderEditableBox {
   bool? _containsCursor;
   List<TextBox>? _selectedRects;
   late Rect _caretPrototype;
+
+  /// 光标x坐标值刷新回调
+  final void Function(double?, double?)? updateCursorPosCallback;
+
   InlineCodeStyle inlineCodeStyle;
   final Map<TextLineSlot, RenderBox> children = <TextLineSlot, RenderBox>{};
 
@@ -1178,14 +1189,19 @@ class RenderEditableTextLine extends RenderEditableBox {
   }
 
   CursorPainter get _cursorPainter => CursorPainter(
-        editable: _body,
-        style: cursorCont.style,
-        prototype: _caretPrototype,
-        color: cursorCont.isFloatingCursorActive
-            ? cursorCont.style.backgroundColor
-            : cursorCont.color.value,
-        devicePixelRatio: devicePixelRatio,
-      );
+      editable: _body,
+      style: cursorCont.style,
+      prototype: _caretPrototype,
+      color: cursorCont.isFloatingCursorActive
+          ? cursorCont.style.backgroundColor
+          : cursorCont.color.value,
+      devicePixelRatio: devicePixelRatio,
+      updateCursorXCallback: (x) {
+        if (x != null && updateCursorPosCallback != null) {
+          //print('===== updateCursorXCallback x: $x');
+          updateCursorPosCallback!.call(x, null);
+        }
+      });
 
   @override
   void paint(PaintingContext context, Offset offset) {
