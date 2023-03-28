@@ -371,13 +371,14 @@ class EditorTextSelectionGestureDetectorBuilder {
   ///  which triggers this callback.
   @protected
   void onDragSelectionEnd(DragEndDetails details) {
-    renderEditor!.handleDragEnd(details);
+    /* //暂时不需要拖动选中文字弹出toolbar的行为,一般也不能这样弹出
     if (isDesktop() &&
         delegate.selectionEnabled &&
         shouldShowSelectionToolbar) {
       // added to show selection copy/paste toolbar after drag to select
       editor!.showToolbar();
     }
+    */
   }
 
   /// Returns a [EditorTextSelectionGestureDetector] configured with
