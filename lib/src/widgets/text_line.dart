@@ -45,7 +45,6 @@ class TextLine extends StatefulWidget {
     this.mentionBuilder,
     this.emojiBuilder,
     this.linkParse,
-    this.cursorPositionCallback,
     Key? key,
   }) : super(key: key);
 
@@ -61,7 +60,6 @@ class TextLine extends StatefulWidget {
   final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
   final InlineSpan? Function(String)? emojiBuilder;
   final void Function(String)? linkParse;
-  final void Function(double?, double?)? cursorPositionCallback;
 
   @override
   State<TextLine> createState() => _TextLineState();
@@ -167,6 +165,14 @@ class _TextLineState extends State<TextLine> {
             context, widget.controller, embed, widget.readOnly));
       }
     }
+
+    // RenderObject? obj = context.findRenderObject();
+    // if(obj is RenderBox){
+    //   //
+    //   final renderBox = obj as RenderBox;
+    //   final lineOffset = renderBox?.localToGlobal(Offset.zero);
+    //   print('---------- line pos: $lineOffset');
+    // }
 
     final textSpan = _getTextSpanForWholeLine(context);
     final strutStyle = StrutStyle.fromTextStyle(textSpan.style!);
@@ -644,7 +650,8 @@ class EditableTextLine extends RenderObjectWidget {
   final bool hasFocus;
   final double devicePixelRatio;
   final CursorCont cursorCont;
-  final void Function(double?, double?)? updateCursorPosCallback;
+  final void Function(double?, double?, {double? blockHeight})?
+      updateCursorPosCallback;
 
   @override
   RenderObjectElement createElement() {
@@ -728,7 +735,8 @@ class RenderEditableTextLine extends RenderEditableBox {
   late Rect _caretPrototype;
 
   /// 光标x坐标值刷新回调
-  final void Function(double?, double?)? updateCursorPosCallback;
+  final void Function(double?, double?, {double? blockHeight})?
+      updateCursorPosCallback;
 
   InlineCodeStyle inlineCodeStyle;
   final Map<TextLineSlot, RenderBox> children = <TextLineSlot, RenderBox>{};
@@ -1196,10 +1204,10 @@ class RenderEditableTextLine extends RenderEditableBox {
           ? cursorCont.style.backgroundColor
           : cursorCont.color.value,
       devicePixelRatio: devicePixelRatio,
-      updateCursorXCallback: (x) {
+      updateCursorXCallback: (x, h) {
         if (x != null && updateCursorPosCallback != null) {
           //print('===== updateCursorXCallback x: $x');
-          updateCursorPosCallback!.call(x, null);
+          updateCursorPosCallback!.call(null, null, blockHeight: h);
         }
       });
 

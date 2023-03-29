@@ -246,7 +246,7 @@ class QuillEditor extends StatefulWidget {
   final void Function(String)? linkParse;
 
   /// 光标位置回调函数
-  final void Function(Offset? position)? cursorPositionCallback;
+  final void Function(Offset)? cursorPositionCallback;
 
   /// 自定义选择
   // final TextSelectionControls? selectionControls;
@@ -459,6 +459,7 @@ class QuillEditorState extends State<QuillEditor>
   final GlobalKey<EditorState> _editorKey = GlobalKey<EditorState>();
   late EditorTextSelectionGestureDetectorBuilder
       _selectionGestureDetectorBuilder;
+  double _cursorBlockHeight = 0;
 
   @override
   void initState() {
@@ -576,6 +577,7 @@ class QuillEditorState extends State<QuillEditor>
       onImagePaste: widget.onImagePaste,
       customShortcuts: widget.customShortcuts,
       customActions: widget.customActions,
+      cursorPositionCallback: _procCursorPos,
     );
 
     final editor = I18n(
@@ -637,6 +639,21 @@ class QuillEditorState extends State<QuillEditor>
       'embedBuilders property of QuillEditor or QuillField widgets or '
       'specify an unknownEmbedBuilder.',
     );
+  }
+
+  void _procCursorPos(Offset? pos, {double? blockHeight}) {
+    if (blockHeight != null && _cursorBlockHeight != blockHeight) {
+      _cursorBlockHeight = blockHeight;
+    }
+    if (pos != null) {
+      double bottomY = pos!.dy + _cursorBlockHeight;
+      final cursorPos = Offset(pos.dx, bottomY);
+      print(
+          '---- _procCursorPos cursorPos: $cursorPos block height: $_cursorBlockHeight');
+      if (widget.cursorPositionCallback != null) {
+        widget.cursorPositionCallback!.call(cursorPos);
+      }
+    }
   }
 
   @override
@@ -895,6 +912,7 @@ class RenderEditor extends RenderEditableContainerBox
     EdgeInsets floatingCursorAddedMargin =
         const EdgeInsets.fromLTRB(4, 4, 4, 5),
     double? maxContentWidth,
+    required this.cursorPositionCallback,
   })  : _hasFocus = hasFocus,
         _extendSelectionOrigin = selection,
         _selection = selection,
@@ -938,6 +956,8 @@ class RenderEditor extends RenderEditableContainerBox
   LayerLink _startHandleLayerLink;
   LayerLink _endHandleLayerLink;
   IsSelectionInViewport? isSelectionInViewport;
+
+  final void Function(Offset?, {double? blockHeight})? cursorPositionCallback;
 
   /// Called when the selection changes.
   TextSelectionChangedHandler onSelectionChanged;
@@ -988,6 +1008,9 @@ class RenderEditor extends RenderEditableContainerBox
           .inflate(visibleRegionSlop)
           .contains(startOffset + effectiveOffset);
 
+      final pos = startOffset + effectiveOffset;
+      // print('--===== show pos: ${pos}');
+      cursorPositionCallback?.call(pos);
       final endPosition =
           TextPosition(offset: selection.end, affinity: selection.affinity);
       final endOffset = _getOffsetForCaret(endPosition);

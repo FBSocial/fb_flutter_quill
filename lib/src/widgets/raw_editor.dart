@@ -110,7 +110,8 @@ class RawEditor extends StatefulWidget {
   final VoidCallback? pasteExtension;
 
   /// 光标位置回调函数
-  final void Function(double x, double y)? cursorPositionCallback;
+  final void Function(Offset? pos, {double? blockHeight})?
+      cursorPositionCallback;
 
   /// Controls the document being edited.
   final QuillController controller;
@@ -296,17 +297,22 @@ class RawEditorState extends EditorState
   // Cursors
   late CursorCont _cursorCont;
 
-  double _cursorX = 0;
-  double _cursorY = 0;
-  void updateCursorPostion(double? x, double? y) {
+  double _cursorX = -1;
+  double _cursorY = -1;
+  double _blockHeight = -1;
+  void updateCursorPostion(double? x, double? y, {double? blockHeight}) {
     var hasUpdate = false;
+    if (blockHeight != null && blockHeight != _blockHeight) {
+      _blockHeight = blockHeight;
+      hasUpdate = true;
+    }
 
     /// 判断光标x坐标值是否更新
     if (x != null) {
       if (_cursorX != x) {
         hasUpdate = true;
         _cursorX = x;
-        print('---- updateCursorPostion x: $x');
+        // print('---- updateCursorPostion x: $x');
       }
     }
 
@@ -314,12 +320,21 @@ class RawEditorState extends EditorState
     if (y != null) {
       if (_cursorY != y) {
         hasUpdate = true;
-        _cursorY = y;
-        print('---- updateCursorPostion y: $y');
+	//上方的y值+块高度 => 块底部y坐标值
+        _cursorY = y + _blockHeight;
+        // print('---- updateCursorPostion y: $y');
       }
     }
-    if (hasUpdate && widget.cursorPositionCallback != null) {
-      widget.cursorPositionCallback!.call(_cursorX, _cursorY);
+
+    if (hasUpdate &&
+        _hasFocus &&
+        _cursorCont.show.value &&
+        widget.cursorPositionCallback != null) {
+      widget.cursorPositionCallback!
+          .call(Offset(_cursorX, _cursorY), blockHeight: blockHeight);
+    }
+    if (!_hasFocus || !_cursorCont.show.value) {
+      print('warning----- _hasFocus:$_hasFocus cursor show:${_cursorCont.show.value}');
     }
   }
 
@@ -384,6 +399,7 @@ class RawEditorState extends EditorState
           maxContentWidth: widget.maxContentWidth,
           floatingCursorDisabled: widget.floatingCursorDisabled,
           isSelectionInViewport: widget.isSelectionInViewport,
+          cursorPositionCallback: widget.cursorPositionCallback,
           children: _buildChildren(_doc, context),
         ),
       ),
@@ -424,6 +440,7 @@ class RawEditorState extends EditorState
               cursorController: _cursorCont,
               floatingCursorDisabled: widget.floatingCursorDisabled,
               isSelectionInViewport: widget.isSelectionInViewport,
+              cursorPositionCallback: widget.cursorPositionCallback,
               children: _buildChildren(_doc, context),
             ),
           ),
@@ -728,7 +745,7 @@ class RawEditorState extends EditorState
           customStyleBuilder: widget.customStyleBuilder,
           emojiBuilder: widget.emojiBuilder,
           linkParse: widget.linkParse,
-          cursorPositionCallback: updateCursorPostion,
+          updateCursorPostion: updateCursorPostion,
         );
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
@@ -1568,6 +1585,7 @@ class _Editor extends MultiChildRenderObjectWidget {
     this.padding = EdgeInsets.zero,
     this.maxContentWidth,
     this.offset,
+    this.cursorPositionCallback,
   }) : super(key: key, children: children);
 
   final ViewportOffset? offset;
@@ -1586,6 +1604,8 @@ class _Editor extends MultiChildRenderObjectWidget {
   final CursorCont cursorController;
   final bool floatingCursorDisabled;
   final IsSelectionInViewport? isSelectionInViewport;
+  final void Function(Offset? pos, {double? blockHeight})?
+      cursorPositionCallback;
 
   @override
   RenderEditor createRenderObject(BuildContext context) {
@@ -1607,6 +1627,7 @@ class _Editor extends MultiChildRenderObjectWidget {
       scrollBottomInset: scrollBottomInset,
       floatingCursorDisabled: floatingCursorDisabled,
       isSelectionInViewport: isSelectionInViewport,
+      cursorPositionCallback: cursorPositionCallback,
     );
   }
 

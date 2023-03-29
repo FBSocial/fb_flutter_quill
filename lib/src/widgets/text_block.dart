@@ -76,13 +76,14 @@ class EditableTextBlock extends StatelessWidget {
       this.mentionBuilder,
       this.emojiBuilder,
       this.linkParse,
-      this.cursorPositionCallback,
+      this.updateCursorPostion,
       Key? key});
 
   final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
   final InlineSpan? Function(String)? emojiBuilder;
   final void Function(String)? linkParse;
-  final void Function(double?, double?)? cursorPositionCallback;
+  final void Function(double?, double?, {double? blockHeight})?
+      updateCursorPostion;
   final Block block;
   final QuillController controller;
   final TextDirection textDirection;
@@ -155,7 +156,6 @@ class EditableTextBlock extends StatelessWidget {
             emojiBuilder: emojiBuilder,
             mentionBuilder: mentionBuilder,
             linkParse: linkParse,
-            cursorPositionCallback: cursorPositionCallback,
           ),
           _getIndentWidth(),
           _getSpacingForLine(line, index, count, defaultStyles),
