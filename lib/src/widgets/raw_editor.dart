@@ -320,7 +320,7 @@ class RawEditorState extends EditorState
     if (y != null) {
       if (_cursorY != y) {
         hasUpdate = true;
-	//上方的y值+块高度 => 块底部y坐标值
+        //上方的y值+块高度 => 块底部y坐标值
         _cursorY = y + _blockHeight;
         // print('---- updateCursorPostion y: $y');
       }
@@ -334,7 +334,8 @@ class RawEditorState extends EditorState
           .call(Offset(_cursorX, _cursorY), blockHeight: blockHeight);
     }
     if (!_hasFocus || !_cursorCont.show.value) {
-      print('warning----- _hasFocus:$_hasFocus cursor show:${_cursorCont.show.value}');
+      print(
+          'warning----- _hasFocus:$_hasFocus cursor show:${_cursorCont.show.value}');
     }
   }
 

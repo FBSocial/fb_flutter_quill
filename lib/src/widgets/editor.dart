@@ -246,7 +246,10 @@ class QuillEditor extends StatefulWidget {
   final void Function(String)? linkParse;
 
   /// 光标位置回调函数
-  final void Function(Offset)? cursorPositionCallback;
+  /// param:
+  ///   bottomLeft: 左下角坐标
+  ///   blockHeight: 光标所在块的高度
+  final void Function(Offset bottomLeft, double blockHeight)? cursorPositionCallback;
 
   /// 自定义选择
   // final TextSelectionControls? selectionControls;
@@ -651,7 +654,7 @@ class QuillEditorState extends State<QuillEditor>
       print(
           '---- _procCursorPos cursorPos: $cursorPos block height: $_cursorBlockHeight');
       if (widget.cursorPositionCallback != null) {
-        widget.cursorPositionCallback!.call(cursorPos);
+        widget.cursorPositionCallback!.call(cursorPos, _cursorBlockHeight);
       }
     }
   }
