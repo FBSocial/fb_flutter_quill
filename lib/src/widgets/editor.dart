@@ -236,8 +236,8 @@ class QuillEditor extends StatefulWidget {
 
   final InlineSpan Function(leaf.Embed, TextStyle)? mentionBuilder;
 
-  /// 粘贴图片回调
-  final VoidCallback? pasteExtension;
+  /// 外部的粘贴回调
+  final Future<bool> Function()? pasteExtension;
 
   /// 表情解析器
   final InlineSpan? Function(String)? emojiBuilder;
@@ -249,7 +249,8 @@ class QuillEditor extends StatefulWidget {
   /// param:
   ///   bottomLeft: 左下角坐标
   ///   blockHeight: 光标所在块的高度
-  final void Function(Offset bottomLeft, double blockHeight)? cursorPositionCallback;
+  final void Function(Offset bottomLeft, double blockHeight)?
+      cursorPositionCallback;
 
   /// 自定义选择
   // final TextSelectionControls? selectionControls;
@@ -651,8 +652,8 @@ class QuillEditorState extends State<QuillEditor>
     if (pos != null) {
       double bottomY = pos!.dy + _cursorBlockHeight;
       final cursorPos = Offset(pos.dx, bottomY);
-      print(
-          '---- _procCursorPos cursorPos: $cursorPos block height: $_cursorBlockHeight');
+      // print(
+      //     '---- _procCursorPos cursorPos: $cursorPos block height: $_cursorBlockHeight');
       if (widget.cursorPositionCallback != null) {
         widget.cursorPositionCallback!.call(cursorPos, _cursorBlockHeight);
       }

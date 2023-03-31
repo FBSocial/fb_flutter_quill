@@ -107,7 +107,8 @@ class RawEditor extends StatefulWidget {
 
   // 修改，添加是否可编辑参数
   // final MouseCursor? mouseCursors;
-  final VoidCallback? pasteExtension;
+
+  final Future<bool> Function()? pasteExtension;
 
   /// 光标位置回调函数
   final void Function(Offset? pos, {double? blockHeight})?
@@ -1318,16 +1319,18 @@ class RawEditorState extends EditorState
     }
     // Snapshot the input before using `await`.
     // See https://github.com/flutter/flutter/issues/11427
+    if (widget.pasteExtension != null) {
+      /// NOTE: 响应外部粘贴回调
+      final bool? isOk = await widget.pasteExtension?.call();
+      if (isOk != null && isOk) {
+        //调用外部粘贴回调后完成粘贴,不再读取flutter粘贴板来插入文字
+        return;
+      }
+    }
     final text = await Clipboard.getData(Clipboard.kTextPlain);
     if (text != null) {
       _replaceText(
           ReplaceTextIntent(textEditingValue, text.text!, selection, cause));
-      final data = await Clipboard.getData(Clipboard.kTextPlain);
-      if (data == null) {
-        /// NOTE: 响应外部粘贴回调
-        widget.pasteExtension?.call();
-        return;
-      }
 
       bringIntoView(textEditingValue.selection.extent);
 
