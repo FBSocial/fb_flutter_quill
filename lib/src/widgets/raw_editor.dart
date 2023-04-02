@@ -1056,7 +1056,9 @@ class RawEditorState extends EditorState
 
   void _updateOrDisposeSelectionOverlayIfNeeded() {
     if (_selectionOverlay != null) {
-      if (!_hasFocus || textEditingValue.selection.isCollapsed) {
+      /// TODO: selection.isCollapsed 此范围是否为空
+      /// (注释掉用于修复编辑框初始化为空内容的情况下右击鼠标没有弹出toolbar的问题)
+      if (!_hasFocus /*|| textEditingValue.selection.isCollapsed*/) {
         _selectionOverlay!.dispose();
         _selectionOverlay = null;
       } else {
@@ -1316,6 +1318,10 @@ class RawEditorState extends EditorState
     final selection = textEditingValue.selection;
     if (!selection.isValid) {
       return;
+    }
+    if (cause == SelectionChangedCause.toolbar) {
+      // 从菜单栏点击的粘贴 需要隐藏菜单
+      hideToolbar();
     }
     // Snapshot the input before using `await`.
     // See https://github.com/flutter/flutter/issues/11427
