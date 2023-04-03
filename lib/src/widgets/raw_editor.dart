@@ -1326,8 +1326,10 @@ class RawEditorState extends EditorState
     // Snapshot the input before using `await`.
     // See https://github.com/flutter/flutter/issues/11427
     if (widget.pasteExtension != null) {
+      controller.isPasting = true;
       /// NOTE: 响应外部粘贴回调
       final bool? isOk = await widget.pasteExtension?.call();
+      controller.isPasting = false;
       if (isOk != null && isOk) {
         //调用外部粘贴回调后完成粘贴,不再读取flutter粘贴板来插入文字
         return;

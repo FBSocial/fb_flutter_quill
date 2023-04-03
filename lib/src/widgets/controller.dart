@@ -20,13 +20,15 @@ class QuillController extends ChangeNotifier {
     required Document document,
     required TextSelection selection,
     bool keepStyleOnNewLine = false,
+    bool isPasting = false,
     this.onReplaceText,
     this.onDelete,
     this.onSelectionCompleted,
     this.onSelectionChanged,
   })  : _document = document,
         _selection = selection,
-        _keepStyleOnNewLine = keepStyleOnNewLine;
+        _keepStyleOnNewLine = keepStyleOnNewLine,
+        _isPasting = isPasting;
 
   factory QuillController.basic() {
     return QuillController(
@@ -50,6 +52,13 @@ class QuillController extends ChangeNotifier {
   /// Tells whether to keep or reset the [toggledStyle]
   /// when user adds a new line.
   final bool _keepStyleOnNewLine;
+
+  /// When editor custom pasting date set true.
+  bool _isPasting;
+  bool get isPasting => _isPasting;
+  set isPasting(bool bPasting) {
+    _isPasting = bPasting;
+  }
 
   /// Currently selected text within the [document].
   TextSelection get selection => _selection;
