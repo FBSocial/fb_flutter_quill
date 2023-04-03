@@ -166,14 +166,6 @@ class _TextLineState extends State<TextLine> {
       }
     }
 
-    // RenderObject? obj = context.findRenderObject();
-    // if(obj is RenderBox){
-    //   //
-    //   final renderBox = obj as RenderBox;
-    //   final lineOffset = renderBox?.localToGlobal(Offset.zero);
-    //   print('---------- line pos: $lineOffset');
-    // }
-
     final textSpan = _getTextSpanForWholeLine(context);
     final strutStyle = StrutStyle.fromTextStyle(textSpan.style!);
     final textAlign = _getTextAlign();
