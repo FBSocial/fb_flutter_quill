@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:io';
 import 'dart:math' as math;
 // ignore: unnecessary_import
 import 'dart:typed_data';
@@ -463,7 +464,11 @@ class RawEditorState extends EditorState
           // shortcuts added for Desktop platforms.
           LogicalKeySet(LogicalKeyboardKey.escape):
               const HideSelectionToolbarIntent(),
-          LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyZ):
+          LogicalKeySet(
+                  Platform.isMacOS
+                      ? LogicalKeyboardKey.comma
+                      : LogicalKeyboardKey.control,
+                  LogicalKeyboardKey.keyZ):
               const UndoTextIntent(SelectionChangedCause.keyboard),
           LogicalKeySet(LogicalKeyboardKey.control, LogicalKeyboardKey.keyY):
               const RedoTextIntent(SelectionChangedCause.keyboard),
@@ -1327,6 +1332,7 @@ class RawEditorState extends EditorState
     // See https://github.com/flutter/flutter/issues/11427
     if (widget.pasteExtension != null) {
       controller.isPasting = true;
+
       /// NOTE: 响应外部粘贴回调
       final bool? isOk = await widget.pasteExtension?.call();
       controller.isPasting = false;
