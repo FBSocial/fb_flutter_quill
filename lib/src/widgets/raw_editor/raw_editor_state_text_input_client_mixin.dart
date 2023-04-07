@@ -318,16 +318,27 @@ mixin RawEditorStateTextInputClientMixin on EditorState
 
   void _updateSizeAndTransform() {
     if (hasConnection) {
-      // Asking for renderEditor.size here can cause errors if layout hasn't
-      // occurred yet. So we schedule a post frame callback instead.
-      SchedulerBinding.instance.addPostFrameCallback((_) {
-        if (!mounted) {
-          return;
-        }
+      final VoidCallback transformFunc = () {
         final size = renderEditor.size;
         final transform = renderEditor.getTransformTo(null);
         _textInputConnection?.setEditableSizeAndTransform(size, transform);
-      });
+      };
+      if (Platform.isWindows) {
+        // Asking for renderEditor.size here can cause errors if layout hasn't
+        // occurred yet. So we schedule a post frame callback instead.
+        SchedulerBinding.instance.addPostFrameCallback((_) {
+          if (!mounted) {
+            return;
+          }
+          transformFunc.call();
+        });
+      } else {
+        // 修复macOS滚动后输入法位置错误的问题
+        // https://github.com/singerdmx/flutter-quill/pull/1153
+        transformFunc.call();
+        SchedulerBinding.instance
+            .addPostFrameCallback((_) => _updateSizeAndTransform());
+      }
     }
   }
 
