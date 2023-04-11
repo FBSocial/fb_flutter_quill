@@ -172,7 +172,7 @@ class _HomePageState extends State<HomePage> {
         // enableSelectionToolbar: isMobile(),
         expands: false,
         externalOffsetYCallback: () {
-          return 20;
+          return 0;
         },
         padding: EdgeInsets.zero,
         onImagePaste: _onImagePaste,
