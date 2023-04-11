@@ -348,6 +348,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
   // plugin needs to estimate the composing rect based on the latest caret rect,
   // when the composing rect info didn't arrive in time.
   void _updateComposingRectIfNeeded() {
+    /*
     final composingRange = textEditingValue.composing;
     if (hasConnection) {
       if (!mounted) {
@@ -385,24 +386,70 @@ mixin RawEditorStateTextInputClientMixin on EditorState
       SchedulerBinding.instance
           ?.addPostFrameCallback((_) => _updateComposingRectIfNeeded());
     }
+    */
+    final TextRange composingRange = textEditingValue.composing;
+    if (hasConnection) {
+      try {
+        assert(mounted);
+        Rect? composingRect =
+            renderEditor.getRectForComposingRange(composingRange);
+        // Send the caret location instead if there's no marked text yet.
+        if (composingRect == null) {
+          assert(!composingRange.isValid || composingRange.isCollapsed);
+          final int offset = composingRange.isValid ? composingRange.start : 0;
+          composingRect =
+              renderEditor.getLocalRectForCaret(TextPosition(offset: offset));
+        }
+
+        /// 尝试调用外部提供的Y偏移量
+        if (widget.externalOffsetYCallback != null) {
+          final externalOffsetY = widget.externalOffsetYCallback?.call() ?? 0;
+          composingRect = composingRect.shift(Offset(0, externalOffsetY));
+        }
+
+        /// 返回出来的composingRect的x一直是0, 那么输入法选词弹窗的x坐标就要偏移到composingRect的右边
+        if (Platform.isWindows) {
+          if (_lastKnownRemoteTextEditingValue?.composing?.isCollapsed ??
+              false) {
+            /// x坐标在落下光标且打字输入开始前记录位置,然后正在打字时不跟随预输入文字块光标跳动，保持在开始输入的位置
+            _composingX = composingRect?.right ?? 0;
+          }
+
+          /// y坐标偏移到文字块底部
+          final TextPosition currentTextPosition =
+              TextPosition(offset: renderEditor.selection!.baseOffset);
+          final Rect caretRect =
+              renderEditor.getLocalRectForCaret(currentTextPosition);
+          composingRect =
+              composingRect.shift(Offset(_composingX, caretRect.height));
+        }
+        assert(composingRect != null);
+        _textInputConnection!.setComposingRect(composingRect);
+      } catch (e) {
+        print('_updateComposingRectIfNeeded error: $e');
+      }
+      SchedulerBinding.instance
+          ?.addPostFrameCallback((Duration _) => _updateComposingRectIfNeeded());
+    }
   }
 
   void _updateCaretRectIfNeeded() {
     if (hasConnection) {
-      if (!mounted) {
-        return;
+      if (renderEditor.selection != null &&
+          renderEditor.selection!.isValid &&
+          renderEditor.selection!.isCollapsed) {
+        try {
+          final TextPosition currentTextPosition =
+              TextPosition(offset: renderEditor.selection!.baseOffset);
+          final Rect caretRect =
+              renderEditor.getLocalRectForCaret(currentTextPosition);
+          _textInputConnection!.setCaretRect(caretRect);
+        } catch (e) {
+          print('_updateCaretRectIfNeeded error: $e');
+        }
       }
-      if (renderEditor.selection.isValid &&
-          renderEditor.selection.isCollapsed) {
-        final currentTextPosition =
-            TextPosition(offset: renderEditor.selection.baseOffset);
-        final caretRect =
-            renderEditor.getLocalRectForCaret(currentTextPosition);
-        _textInputConnection?.setCaretRect(caretRect);
-      }
-
       SchedulerBinding.instance
-          ?.addPostFrameCallback((_) => _updateCaretRectIfNeeded());
+          ?.addPostFrameCallback((Duration _) => _updateCaretRectIfNeeded());
     }
   }
 }

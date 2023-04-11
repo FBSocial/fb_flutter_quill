@@ -89,6 +89,7 @@ class RawEditor extends StatefulWidget {
     this.pasteExtension,
     this.linkParse,
     this.cursorPositionCallback,
+    this.externalOffsetYCallback,
   })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
@@ -113,6 +114,9 @@ class RawEditor extends StatefulWidget {
   /// 光标位置回调函数
   final void Function(Offset? pos, {double? blockHeight})?
       cursorPositionCallback;
+
+  /// 获取外部设置y方向偏移量 (用于调整输入法弹窗位置)
+  final double Function()? externalOffsetYCallback;
 
   /// Controls the document being edited.
   final QuillController controller;
@@ -1327,6 +1331,7 @@ class RawEditorState extends EditorState
     // See https://github.com/flutter/flutter/issues/11427
     if (widget.pasteExtension != null) {
       controller.isPasting = true;
+
       /// NOTE: 响应外部粘贴回调
       final bool? isOk = await widget.pasteExtension?.call();
       controller.isPasting = false;

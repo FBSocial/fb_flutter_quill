@@ -171,6 +171,9 @@ class _HomePageState extends State<HomePage> {
         placeholder: 'Add content',
         // enableSelectionToolbar: isMobile(),
         expands: false,
+        externalOffsetYCallback: () {
+          return 20;
+        },
         padding: EdgeInsets.zero,
         onImagePaste: _onImagePaste,
         onTapUp: (details, p1) {

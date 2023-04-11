@@ -196,6 +196,7 @@ class QuillEditor extends StatefulWidget {
       this.emojiBuilder,
       this.linkParse,
       this.cursorPositionCallback,
+      this.externalOffsetYCallback,
       this.textSelectionControls,
       this.onImagePaste,
       this.customShortcuts,
@@ -251,6 +252,9 @@ class QuillEditor extends StatefulWidget {
   ///   blockHeight: 光标所在块的高度
   final void Function(Offset bottomLeft, double blockHeight)?
       cursorPositionCallback;
+
+  /// 获取外部设置y方向偏移量 (用于调整输入法弹窗位置)
+  final double Function()? externalOffsetYCallback;
 
   /// 自定义选择
   // final TextSelectionControls? selectionControls;
@@ -582,6 +586,7 @@ class QuillEditorState extends State<QuillEditor>
       customShortcuts: widget.customShortcuts,
       customActions: widget.customActions,
       cursorPositionCallback: _procCursorPos,
+      externalOffsetYCallback: widget.externalOffsetYCallback,
     );
 
     final editor = I18n(
