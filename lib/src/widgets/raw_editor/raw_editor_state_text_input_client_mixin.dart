@@ -69,7 +69,9 @@ mixin RawEditorStateTextInputClientMixin on EditorState
 
       _updateSizeAndTransform();
       if (Platform.isWindows || Platform.isMacOS) {
+        //update IME position for Windows
         _updateComposingRectIfNeeded();
+        //update IME position for Macos
         _updateCaretRectIfNeeded();
       }
       _textInputConnection!.setEditingState(_lastKnownRemoteTextEditingValue!);
@@ -387,7 +389,8 @@ mixin RawEditorStateTextInputClientMixin on EditorState
           ?.addPostFrameCallback((_) => _updateComposingRectIfNeeded());
     }
     */
-    final TextRange composingRange = textEditingValue.composing;
+    final composingRange = _lastKnownRemoteTextEditingValue?.composing ??
+        textEditingValue.composing;
     if (hasConnection) {
       try {
         assert(mounted);
@@ -399,12 +402,6 @@ mixin RawEditorStateTextInputClientMixin on EditorState
           final int offset = composingRange.isValid ? composingRange.start : 0;
           composingRect =
               renderEditor.getLocalRectForCaret(TextPosition(offset: offset));
-        }
-
-        /// 尝试调用外部提供的Y偏移量
-        if (widget.externalOffsetYCallback != null) {
-          final externalOffsetY = widget.externalOffsetYCallback?.call() ?? 0;
-          composingRect = composingRect.shift(Offset(0, externalOffsetY));
         }
 
         /// 返回出来的composingRect的x一直是0, 那么输入法选词弹窗的x坐标就要偏移到composingRect的右边
@@ -422,6 +419,12 @@ mixin RawEditorStateTextInputClientMixin on EditorState
               renderEditor.getLocalRectForCaret(currentTextPosition);
           composingRect =
               composingRect.shift(Offset(_composingX, caretRect.height));
+
+          /// 尝试调用外部提供的Y偏移量
+          if (widget.externalOffsetYCallback != null) {
+            final externalOffsetY = widget.externalOffsetYCallback?.call() ?? 0;
+            composingRect = composingRect.shift(Offset(0, externalOffsetY));
+          }
         }
         assert(composingRect != null);
         _textInputConnection!.setComposingRect(composingRect);
@@ -429,7 +432,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
         print('_updateComposingRectIfNeeded error: $e');
       }
       SchedulerBinding.instance
-          ?.addPostFrameCallback((Duration _) => _updateComposingRectIfNeeded());
+          .addPostFrameCallback((_) => _updateCaretRectIfNeeded());
     }
   }
 
@@ -449,7 +452,7 @@ mixin RawEditorStateTextInputClientMixin on EditorState
         }
       }
       SchedulerBinding.instance
-          ?.addPostFrameCallback((Duration _) => _updateCaretRectIfNeeded());
+          .addPostFrameCallback((_) => _updateComposingRectIfNeeded());
     }
   }
 }
