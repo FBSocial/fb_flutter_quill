@@ -259,8 +259,9 @@ class EditableTextBlock extends StatelessWidget {
     if (attrs.containsKey(Attribute.list.key) ||
         attrs.containsKey(Attribute.codeBlock.key)) {
       double indentWidth = 32.0;
-      if (defaultStyles!.code is TextCodeBlockStyle) {
-        indentWidth = defaultStyles!.code.indentWidth;
+      final codeStyle = defaultStyles!.code;
+      if (codeStyle is TextCodeBlockStyle) {
+        indentWidth = codeStyle.indentWidth;
       }
       baseIndent = indentWidth;
     }
