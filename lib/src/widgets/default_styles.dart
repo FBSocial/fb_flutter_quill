@@ -64,6 +64,7 @@ class TextCodeBlockStyle extends DefaultTextBlockStyle {
     lineSpacing,
     decoration,
     this.indentWidth,
+    this.padding,
   ) : super(
           style,
           verticalSpacing,
