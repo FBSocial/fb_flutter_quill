@@ -649,14 +649,15 @@ class RawEditorState extends EditorState
         ChangeSource.LOCAL);
   }
 
-  void _updateSelectionForKeyPhrase(String phrase, Attribute attribute) {
+  void _updateSelectionForKeyPhrase(String phrase, Attribute attribute) async {
     controller.replaceText(controller.selection.baseOffset - phrase.length,
         phrase.length, '\n', null);
     _moveCursor(-phrase.length);
-    controller
-      ..formatSelection(attribute)
-      // Remove the added newline.
-      ..replaceText(controller.selection.baseOffset + 1, 1, '', null);
+    controller.formatSelection(attribute);
+    // 操作完document后马上操作selection光标的位置会出现不准确
+    await Future.delayed(const Duration(milliseconds: 50));
+    // Remove the added newline.
+    controller.replaceText(controller.selection.baseOffset + 1, 1, '', null);
   }
 
   void _handleSelectionChanged(
