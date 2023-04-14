@@ -71,6 +71,7 @@ class TextCodeBlockStyle extends DefaultTextBlockStyle {
           decoration,
         );
   final double indentWidth;
+  final double padding;
 }
 
 /// Theme data for inline code.

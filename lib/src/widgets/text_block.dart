@@ -177,6 +177,14 @@ class EditableTextBlock extends StatelessWidget {
       Map<int, int> indentLevelCounts, int count) {
     final defaultStyles = QuillStyles.getStyles(context, false);
     final attrs = line.style.attributes;
+    double indentWidth = 32.0;
+    double padding = 16;
+
+    final codeStyle = defaultStyles!.code;
+    if (codeStyle is TextCodeBlockStyle) {
+      indentWidth = codeStyle.indentWidth;
+      padding = codeStyle.padding;
+    }
     if (attrs[Attribute.list.key] == Attribute.ol) {
       return QuillNumberPoint(
         index: index,
@@ -184,7 +192,7 @@ class EditableTextBlock extends StatelessWidget {
         count: count,
         style: defaultStyles!.leading!.style,
         attrs: attrs,
-        width: 32,
+        width: indentWidth,
         padding: 8,
       );
     }
@@ -193,7 +201,7 @@ class EditableTextBlock extends StatelessWidget {
       return QuillBulletPoint(
         style:
             defaultStyles!.leading!.style.copyWith(fontWeight: FontWeight.bold),
-        width: 32,
+        width: indentWidth,
       );
     }
 
@@ -224,9 +232,9 @@ class EditableTextBlock extends StatelessWidget {
         count: count,
         style: defaultStyles!.code!.style
             .copyWith(color: defaultStyles.code!.style.color!.withOpacity(0.4)),
-        width: 32,
+        width: indentWidth,
         attrs: attrs,
-        padding: 16,
+        padding: padding,
         withDot: false,
       );
     }
