@@ -57,6 +57,22 @@ class DefaultTextBlockStyle {
   final BoxDecoration? decoration;
 }
 
+class TextCodeBlockStyle extends DefaultTextBlockStyle {
+  TextCodeBlockStyle(
+    style,
+    verticalSpacing,
+    lineSpacing,
+    decoration,
+    this.indentWidth,
+  ) : super(
+          style,
+          verticalSpacing,
+          lineSpacing,
+          decoration,
+        );
+  final double indentWidth;
+}
+
 /// Theme data for inline code.
 class InlineCodeStyle {
   InlineCodeStyle({
