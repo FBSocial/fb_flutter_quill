@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 // ignore: unnecessary_import
 import 'dart:typed_data';
@@ -185,6 +186,7 @@ class QuillEditor extends StatefulWidget {
       this.onSingleLongTapStart,
       this.onSingleLongTapMoveUpdate,
       this.onSingleLongTapEnd,
+      this.onDoubleTapDown,
       this.embedBuilders,
       this.unknownEmbedBuilder,
       this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
@@ -410,6 +412,11 @@ class QuillEditor extends StatefulWidget {
   final bool Function(
           LongPressEndDetails details, TextPosition Function(Offset offset))?
       onSingleLongTapEnd;
+
+  /// Called after a momentary hold or a short tap that is close in space and
+  /// time (within [kDoubleTapTimeout]) to a previous short tap.
+  /// 鼠标双击的回调
+  final void Function(TapDownDetails details)? onDoubleTapDown;
 
   final Iterable<EmbedBuilder>? embedBuilders;
   final EmbedsBuilder? unknownEmbedBuilder;
@@ -860,6 +867,17 @@ class _QuillEditorSelectionGestureDetectorBuilder
       }
     }
     super.onSingleLongTapEnd(details);
+  }
+
+  @override
+  void onDoubleTapDown(TapDownDetails details) {
+    if (_state.widget.onDoubleTapDown != null) {
+      _state.widget.onDoubleTapDown!(details);
+    }
+    if (Platform.isWindows || Platform.isMacOS || kIsWeb) {
+      shouldShowSelectionToolbar = false;
+    }
+    super.onDoubleTapDown(details);
   }
 }
 
