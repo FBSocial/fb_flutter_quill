@@ -398,7 +398,9 @@ class _TextLineState extends State<TextLine> {
             ));
           }
         } else {
-          final _isLink = e.startsWith('http');
+          final RegExp urlPattern = RegExp(
+              r"(http(s)?|ftp)://[a-zA-Z\d@:._+~#=-]{1,256}\.[a-z\d]{2,18}\b([-a-zA-Z\d!@:_+.~#?&/=%,$]*)(?<![$])");
+          final _isLink = urlPattern.hasMatch(e);
           children.add(TextSpan(
             text: e,
             style: _getInlineTextStyle(
