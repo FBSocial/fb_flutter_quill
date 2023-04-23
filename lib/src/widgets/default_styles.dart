@@ -57,6 +57,24 @@ class DefaultTextBlockStyle {
   final BoxDecoration? decoration;
 }
 
+class TextCodeBlockStyle extends DefaultTextBlockStyle {
+  TextCodeBlockStyle(
+    style,
+    verticalSpacing,
+    lineSpacing,
+    decoration,
+    this.indentWidth,
+    this.padding,
+  ) : super(
+          style,
+          verticalSpacing,
+          lineSpacing,
+          decoration,
+        );
+  final double indentWidth;
+  final double padding;
+}
+
 /// Theme data for inline code.
 class InlineCodeStyle {
   InlineCodeStyle({
@@ -195,7 +213,6 @@ class DefaultStyles {
     final baseStyle = defaultTextStyle.style.copyWith(
       fontSize: 16,
       height: 1.5,
-
       decoration: TextDecoration.none,
     );
     // NOTE: 2022/3/4 修改baseSpacing为0（待验证）

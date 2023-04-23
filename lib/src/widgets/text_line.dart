@@ -398,7 +398,9 @@ class _TextLineState extends State<TextLine> {
             ));
           }
         } else {
-          final _isLink = e.startsWith('http');
+          final RegExp urlPattern = RegExp(
+              r"(http(s)?|ftp)://[a-zA-Z\d@:._+~#=-]{1,256}\.[a-z\d]{2,18}\b([-a-zA-Z\d!@:_+.~#?&/=%,$]*)(?<![$])");
+          final _isLink = urlPattern.hasMatch(e);
           children.add(TextSpan(
             text: e,
             style: _getInlineTextStyle(
@@ -626,8 +628,9 @@ class EditableTextLine extends RenderObjectWidget {
     this.enableInteractiveSelection,
     this.hasFocus,
     this.devicePixelRatio,
-    this.cursorCont,
-  );
+    this.cursorCont, {
+    @required this.updateCursorPosCallback,
+  });
 
   final Line line;
   final Widget? leading;
@@ -641,6 +644,8 @@ class EditableTextLine extends RenderObjectWidget {
   final bool hasFocus;
   final double devicePixelRatio;
   final CursorCont cursorCont;
+  final void Function(double?, double?, {double? blockHeight})?
+      updateCursorPosCallback;
 
   @override
   RenderObjectElement createElement() {
@@ -651,16 +656,18 @@ class EditableTextLine extends RenderObjectWidget {
   RenderObject createRenderObject(BuildContext context) {
     final defaultStyles = DefaultStyles.getInstance(context);
     return RenderEditableTextLine(
-        line,
-        textDirection,
-        textSelection,
-        enableInteractiveSelection,
-        hasFocus,
-        devicePixelRatio,
-        _getPadding(),
-        color,
-        cursorCont,
-        defaultStyles.inlineCode!);
+      line,
+      textDirection,
+      textSelection,
+      enableInteractiveSelection,
+      hasFocus,
+      devicePixelRatio,
+      _getPadding(),
+      color,
+      cursorCont,
+      defaultStyles.inlineCode!,
+      updateCursorPosCallback: updateCursorPosCallback,
+    );
   }
 
   @override
@@ -702,7 +709,8 @@ class RenderEditableTextLine extends RenderEditableBox {
       this.padding,
       this.color,
       this.cursorCont,
-      this.inlineCodeStyle);
+      this.inlineCodeStyle,
+      {@required this.updateCursorPosCallback});
 
   RenderBox? _leading;
   RenderContentProxyBox? _body;
@@ -719,6 +727,11 @@ class RenderEditableTextLine extends RenderEditableBox {
   bool? _containsCursor;
   List<TextBox>? _selectedRects;
   late Rect _caretPrototype;
+
+  /// 光标x坐标值刷新回调
+  final void Function(double?, double?, {double? blockHeight})?
+      updateCursorPosCallback;
+
   InlineCodeStyle inlineCodeStyle;
   final Map<TextLineSlot, RenderBox> children = <TextLineSlot, RenderBox>{};
 
@@ -1178,14 +1191,19 @@ class RenderEditableTextLine extends RenderEditableBox {
   }
 
   CursorPainter get _cursorPainter => CursorPainter(
-        editable: _body,
-        style: cursorCont.style,
-        prototype: _caretPrototype,
-        color: cursorCont.isFloatingCursorActive
-            ? cursorCont.style.backgroundColor
-            : cursorCont.color.value,
-        devicePixelRatio: devicePixelRatio,
-      );
+      editable: _body,
+      style: cursorCont.style,
+      prototype: _caretPrototype,
+      color: cursorCont.isFloatingCursorActive
+          ? cursorCont.style.backgroundColor
+          : cursorCont.color.value,
+      devicePixelRatio: devicePixelRatio,
+      updateCursorXCallback: (x, h) {
+        if (x != null && updateCursorPosCallback != null) {
+          //print('===== updateCursorXCallback x: $x');
+          updateCursorPosCallback!.call(null, null, blockHeight: h);
+        }
+      });
 
   @override
   void paint(PaintingContext context, Offset offset) {
@@ -1311,6 +1329,9 @@ class RenderEditableTextLine extends RenderEditableBox {
 
   @override
   TextPosition globalToLocalPosition(TextPosition position) {
+    if (!container.containsOffset(position.offset)) {
+      print('warning: position.offset=${position.offset}');
+    }
     assert(container.containsOffset(position.offset),
         'The provided text position is not in the current node');
     return TextPosition(

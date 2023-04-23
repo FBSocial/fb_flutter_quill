@@ -74,3 +74,10 @@ example/ios/Podfile.lock
 !**/ios/**/default.pbxuser
 !**/ios/**/default.perspectivev3
 pubspec.lock
+/example/linux/flutter/generated_plugins.cmake
+/example/linux/flutter/generated_plugin_registrant.cc
+/example/linux/flutter/generated_plugin_registrant.h
+/example/macos/Flutter/GeneratedPluginRegistrant.swift
+/example/windows/flutter/generated_plugins.cmake
+/example/windows/flutter/generated_plugin_registrant.cc
+/example/windows/flutter/generated_plugin_registrant.h

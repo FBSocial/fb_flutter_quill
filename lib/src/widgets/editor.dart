@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'dart:math' as math;
 // ignore: unnecessary_import
 import 'dart:typed_data';
@@ -185,6 +186,7 @@ class QuillEditor extends StatefulWidget {
       this.onSingleLongTapStart,
       this.onSingleLongTapMoveUpdate,
       this.onSingleLongTapEnd,
+      this.onDoubleTapDown,
       this.embedBuilders,
       this.unknownEmbedBuilder,
       this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
@@ -195,14 +197,16 @@ class QuillEditor extends StatefulWidget {
       this.mentionBuilder,
       this.emojiBuilder,
       this.linkParse,
+      this.cursorPositionCallback,
+      this.externalOffsetYCallback,
       this.textSelectionControls,
       this.onImagePaste,
       this.customShortcuts,
       this.customActions,
-        this.cursorOffset,
-        this.cursorHeight,
-        this.cursorWidth,
-        this.cursorRadius,
+      this.cursorOffset,
+      this.cursorHeight,
+      this.cursorWidth,
+      this.cursorRadius,
       Key? key})
       : super(key: key);
 
@@ -235,14 +239,24 @@ class QuillEditor extends StatefulWidget {
 
   final InlineSpan Function(leaf.Embed, TextStyle)? mentionBuilder;
 
-  /// 粘贴图片回调
-  final VoidCallback? pasteExtension;
+  /// 外部的粘贴回调
+  final Future<bool> Function()? pasteExtension;
 
   /// 表情解析器
   final InlineSpan? Function(String)? emojiBuilder;
 
   /// 链接解析扩展
   final void Function(String)? linkParse;
+
+  /// 光标位置回调函数
+  /// param:
+  ///   bottomLeft: 左下角坐标
+  ///   blockHeight: 光标所在块的高度
+  final void Function(Offset bottomLeft, double blockHeight)?
+      cursorPositionCallback;
+
+  /// 获取外部设置y方向偏移量 (用于调整输入法弹窗位置)
+  final double Function()? externalOffsetYCallback;
 
   /// 自定义选择
   // final TextSelectionControls? selectionControls;
@@ -399,6 +413,11 @@ class QuillEditor extends StatefulWidget {
           LongPressEndDetails details, TextPosition Function(Offset offset))?
       onSingleLongTapEnd;
 
+  /// Called after a momentary hold or a short tap that is close in space and
+  /// time (within [kDoubleTapTimeout]) to a previous short tap.
+  /// 鼠标双击的回调
+  final void Function(TapDownDetails details)? onDoubleTapDown;
+
   final Iterable<EmbedBuilder>? embedBuilders;
   final EmbedsBuilder? unknownEmbedBuilder;
   final CustomStyleBuilder? customStyleBuilder;
@@ -455,6 +474,7 @@ class QuillEditorState extends State<QuillEditor>
   final GlobalKey<EditorState> _editorKey = GlobalKey<EditorState>();
   late EditorTextSelectionGestureDetectorBuilder
       _selectionGestureDetectorBuilder;
+  double _cursorBlockHeight = 0;
 
   @override
   void initState() {
@@ -572,6 +592,8 @@ class QuillEditorState extends State<QuillEditor>
       onImagePaste: widget.onImagePaste,
       customShortcuts: widget.customShortcuts,
       customActions: widget.customActions,
+      cursorPositionCallback: _procCursorPos,
+      externalOffsetYCallback: widget.externalOffsetYCallback,
     );
 
     final editor = I18n(
@@ -633,6 +655,21 @@ class QuillEditorState extends State<QuillEditor>
       'embedBuilders property of QuillEditor or QuillField widgets or '
       'specify an unknownEmbedBuilder.',
     );
+  }
+
+  void _procCursorPos(Offset? pos, {double? blockHeight}) {
+    if (blockHeight != null && _cursorBlockHeight != blockHeight) {
+      _cursorBlockHeight = blockHeight;
+    }
+    if (pos != null) {
+      double bottomY = pos!.dy + _cursorBlockHeight;
+      final cursorPos = Offset(pos.dx, bottomY);
+      // print(
+      //     '---- _procCursorPos cursorPos: $cursorPos block height: $_cursorBlockHeight');
+      if (widget.cursorPositionCallback != null) {
+        widget.cursorPositionCallback!.call(cursorPos, _cursorBlockHeight);
+      }
+    }
   }
 
   @override
@@ -831,6 +868,17 @@ class _QuillEditorSelectionGestureDetectorBuilder
     }
     super.onSingleLongTapEnd(details);
   }
+
+  @override
+  void onDoubleTapDown(TapDownDetails details) {
+    if (_state.widget.onDoubleTapDown != null) {
+      _state.widget.onDoubleTapDown!(details);
+    }
+    if (Platform.isWindows || Platform.isMacOS || kIsWeb) {
+      shouldShowSelectionToolbar = false;
+    }
+    super.onDoubleTapDown(details);
+  }
 }
 
 /// Signature for the callback that reports when the user changes the selection
@@ -860,7 +908,8 @@ const EdgeInsets _kFloatingCursorAddedMargin = EdgeInsets.fromLTRB(4, 4, 4, 5);
 const EdgeInsets _kFloatingCaretSizeIncrease =
     EdgeInsets.symmetric(horizontal: 0.5, vertical: 1);
 
-typedef IsSelectionInViewport = List<bool> Function(double selectionStart, double selectionEnd);
+typedef IsSelectionInViewport = List<bool> Function(
+    double selectionStart, double selectionEnd);
 
 /// Displays a document as a vertical list of document segments (lines
 /// and blocks).
@@ -890,6 +939,7 @@ class RenderEditor extends RenderEditableContainerBox
     EdgeInsets floatingCursorAddedMargin =
         const EdgeInsets.fromLTRB(4, 4, 4, 5),
     double? maxContentWidth,
+    required this.cursorPositionCallback,
   })  : _hasFocus = hasFocus,
         _extendSelectionOrigin = selection,
         _selection = selection,
@@ -934,6 +984,8 @@ class RenderEditor extends RenderEditableContainerBox
   LayerLink _endHandleLayerLink;
   IsSelectionInViewport? isSelectionInViewport;
 
+  final void Function(Offset?, {double? blockHeight})? cursorPositionCallback;
+
   /// Called when the selection changes.
   TextSelectionChangedHandler onSelectionChanged;
   TextSelectionCompletedHandler onSelectionCompleted;
@@ -948,28 +1000,28 @@ class RenderEditor extends RenderEditableContainerBox
 
   void _updateSelectionExtentsVisibility(Offset effectiveOffset) {
     // 修改，添加isSelectionInViewport!=null的逻辑
-    if(isSelectionInViewport!=null) {
-      final renderBox = (key.currentContext!.findRenderObject()!) as RenderBox ;
+    if (isSelectionInViewport != null) {
+      final renderBox = (key.currentContext!.findRenderObject()!) as RenderBox;
       final edotirOffset = renderBox.localToGlobal(Offset.zero);
 
       final startPosition =
-      TextPosition(offset: selection.start, affinity: selection.affinity);
+          TextPosition(offset: selection.start, affinity: selection.affinity);
       final startOffset = _getOffsetForCaret(startPosition);
       final startPositionY = edotirOffset.dy + startOffset.dy;
 
       final endPosition =
-      TextPosition(offset: selection.end, affinity: selection.affinity);
+          TextPosition(offset: selection.end, affinity: selection.affinity);
       final endOffset = _getOffsetForCaret(endPosition);
       final endPositionY = edotirOffset.dy + endOffset.dy;
 
-      final List<bool> res = isSelectionInViewport!.call(startPositionY,endPositionY);
+      final List<bool> res =
+          isSelectionInViewport!.call(startPositionY, endPositionY);
       _selectionStartInViewport.value = res[0];
       _selectionEndInViewport.value = res[1];
-
     } else {
       final visibleRegion = Offset.zero & size;
       final startPosition =
-      TextPosition(offset: selection.start, affinity: selection.affinity);
+          TextPosition(offset: selection.start, affinity: selection.affinity);
       final startOffset = _getOffsetForCaret(startPosition);
       // TODO(justinmc): https://github.com/flutter/flutter/issues/31495
       // Check if the selection is visible with an approximation because a
@@ -983,8 +1035,11 @@ class RenderEditor extends RenderEditableContainerBox
           .inflate(visibleRegionSlop)
           .contains(startOffset + effectiveOffset);
 
+      final pos = startOffset + effectiveOffset;
+      // print('--===== show pos: ${pos}');
+      cursorPositionCallback?.call(pos);
       final endPosition =
-      TextPosition(offset: selection.end, affinity: selection.affinity);
+          TextPosition(offset: selection.end, affinity: selection.affinity);
       final endOffset = _getOffsetForCaret(endPosition);
       _selectionEndInViewport.value = visibleRegion
           .inflate(visibleRegionSlop)

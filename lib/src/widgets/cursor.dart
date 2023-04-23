@@ -245,6 +245,7 @@ class CursorPainter {
     required this.prototype,
     required this.color,
     required this.devicePixelRatio,
+    this.updateCursorXCallback,
   });
 
   final RenderContentProxyBox? editable;
@@ -252,6 +253,7 @@ class CursorPainter {
   final Rect prototype;
   final Color color;
   final double devicePixelRatio;
+  final void Function(double, double?)? updateCursorXCallback;
 
   /// Paints cursor on [canvas] at specified [position].
   /// [offset] is global top left (x, y) of text line
@@ -315,12 +317,17 @@ class CursorPainter {
     caretRect = caretRect.shift(pixelPerfectOffset);
 
     final paint = Paint()..color = color;
+    Offset pos;
     if (style.radius == null) {
       canvas.drawRect(caretRect, paint);
+      pos = caretRect.bottomLeft;
     } else {
       final caretRRect = RRect.fromRectAndRadius(caretRect, style.radius!);
       canvas.drawRRect(caretRRect, paint);
+      pos = Offset(caretRRect.left, caretRRect.bottom);
     }
+    // print('====== CursorPainter paint(${pos.dx}, ${pos.dy})');
+    updateCursorXCallback?.call(pos.dx, caretHeight);
   }
 
   Offset _getPixelPerfectCursorOffset(
