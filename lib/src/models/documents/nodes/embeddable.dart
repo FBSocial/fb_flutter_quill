@@ -106,6 +106,7 @@ class ImageEmbed extends Embeddable {
     required this.height,
     this.name,
     this.checkPath,
+    this.size,
   }) : super('image', {
           'name': name,
           'source': source,
@@ -114,6 +115,7 @@ class ImageEmbed extends Embeddable {
           'checkPath': checkPath,
           '_type': 'image',
           '_inline': false,
+          'size': size,
         });
 
   final String? name;
@@ -121,6 +123,7 @@ class ImageEmbed extends Embeddable {
   final String source;
   final num width;
   final num height;
+  num? size;
 
   @override
   Map<String, dynamic> toJson() {
@@ -132,6 +135,7 @@ class ImageEmbed extends Embeddable {
       'checkPath': checkPath,
       '_type': 'image',
       '_inline': false,
+      'size': size ?? 0,
     };
   }
 
@@ -156,12 +160,19 @@ class ImageEmbed extends Embeddable {
     } else if (data['height'] is num) {
       height = data['height'];
     }
+    num size = 0;
+    if (data['size'] is String) {
+      size = num.tryParse(data['size']) ?? 0;
+    } else if (data['size'] is num) {
+      size = data['size'];
+    }
     return ImageEmbed(
       name: data['name'] as String?,
       source: data['source'] as String,
       checkPath: data['checkPath'] as String?,
       width: width,
       height: height,
+      size: size,
     );
   }
 }
@@ -302,7 +313,7 @@ class MentionEmbed extends Embeddable {
   int get length {
     return value.length;
   }
-  
+
   static MentionEmbed fromJson(Map<String, dynamic> data) {
     return MentionEmbed(
       denotationChar: data['denotationChar'],
