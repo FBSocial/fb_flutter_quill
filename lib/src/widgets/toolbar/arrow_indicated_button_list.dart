@@ -7,8 +7,15 @@ import 'package:flutter/material.dart';
 /// The arrow indicators are automatically hidden if the list is not
 /// scrollable in the direction of the respective arrow.
 class ArrowIndicatedButtonList extends StatefulWidget {
-  const ArrowIndicatedButtonList({required this.buttons, Key? key})
+  const ArrowIndicatedButtonList(
+      {required this.buttons,
+      required this.toolbarHeight,
+      required this.arrowColor,
+      Key? key})
       : super(key: key);
+
+  final double toolbarHeight;
+  final Color arrowColor;
 
   final List<Widget> buttons;
 
@@ -45,13 +52,51 @@ class _ArrowIndicatedButtonListState extends State<ArrowIndicatedButtonList>
       _showLeftArrow = false;
       _showRightArrow = false;
     }
-    return Row(
-      children: <Widget>[
-        _buildLeftArrow(),
+    return Stack(
+      children: [
         _buildScrollableList(),
-        _buildRightColor(),
+        if (_showRightArrow)
+          Positioned(
+            right: 0,
+            child: Container(
+              width: 24,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    widget.arrowColor.withOpacity(0),
+                    widget.arrowColor,
+                  ],
+                ),
+              ),
+            ),
+          ),
+        if (_showLeftArrow)
+          Positioned(
+            left: 0,
+            child: Container(
+              width: 24,
+              height: 36,
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  colors: [
+                    widget.arrowColor,
+                    widget.arrowColor.withOpacity(0),
+                  ],
+                ),
+              ),
+            ),
+          )
       ],
     );
+
+    // return Row(
+    //   children: <Widget>[
+    //     _buildLeftArrow(),
+    //     _buildScrollableList(),
+    //     _buildRightColor(),
+    //   ],
+    // );
   }
 
   @override
