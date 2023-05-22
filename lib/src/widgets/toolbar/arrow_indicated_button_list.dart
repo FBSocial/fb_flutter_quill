@@ -132,26 +132,24 @@ class _ArrowIndicatedButtonListState extends State<ArrowIndicatedButtonList>
   }
 
   Widget _buildScrollableList() {
-    return Expanded(
-      child: ScrollConfiguration(
-        // Remove the glowing effect, as we already have the arrow indicators
-        behavior: _NoGlowBehavior(),
-        // The CustomScrollView is necessary so that the children are not
-        // stretched to the height of the toolbar, https://bit.ly/3uC3bjI
-        child: CustomScrollView(
-          scrollDirection: Axis.horizontal,
-          controller: _controller,
-          physics: const ClampingScrollPhysics(),
-          slivers: [
-            SliverFillRemaining(
-              hasScrollBody: false,
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                children: widget.buttons,
-              ),
-            )
-          ],
-        ),
+    return ScrollConfiguration(
+      // Remove the glowing effect, as we already have the arrow indicators
+      behavior: _NoGlowBehavior(),
+      // The CustomScrollView is necessary so that the children are not
+      // stretched to the height of the toolbar, https://bit.ly/3uC3bjI
+      child: CustomScrollView(
+        scrollDirection: Axis.horizontal,
+        controller: _controller,
+        physics: const ClampingScrollPhysics(),
+        slivers: [
+          SliverFillRemaining(
+            hasScrollBody: false,
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+              children: widget.buttons,
+            ),
+          )
+        ],
       ),
     );
   }
