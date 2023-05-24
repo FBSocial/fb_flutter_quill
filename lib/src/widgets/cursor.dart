@@ -266,8 +266,9 @@ class CursorPainter {
               offset: position.offset - 1, affinity: position.affinity),
           prototype);
       // Hardcoded 6 as estimate of the width of a character
+      // 不知为何需要在此处+6，但是影响了分割线的定位位置，所以去掉了
       relativeCaretOffset =
-          Offset(relativeCaretOffset.dx + 6, relativeCaretOffset.dy);
+          Offset(relativeCaretOffset.dx , relativeCaretOffset.dy);
     }
 
     final caretOffset = relativeCaretOffset + offset;
