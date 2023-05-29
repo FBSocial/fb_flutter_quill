@@ -323,14 +323,14 @@ class EditableTextBlock extends StatelessWidget {
       bottom = lineSpacing.item2;
     }
 
-    /// block块第一个顶部为0，是有问题的，暂时注释掉
+    /// block块第一个顶部为0，底部为0，是有问题的，暂时注释掉
     // if (index == 1) {
     //   top = 0.0;
     // }
 
-    if (index == count) {
-      bottom = 0.0;
-    }
+    // if (index == count) {
+    //   bottom = 0.0;
+    // }
 
     return Tuple2(top, bottom);
   }
