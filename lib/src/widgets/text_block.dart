@@ -276,6 +276,35 @@ class EditableTextBlock extends StatelessWidget {
         default:
           throw 'Invalid level $level';
       }
+    } else if (attrs.containsKey(Attribute.align.key)) {
+      /// align 里面可以存放 H1，H2，H3 和正文，其属性应该是使用的其对应的间距
+      final Tuple2 lineSpacing = defaultStyles!.align!.lineSpacing;
+      if (block.childCount > 0 && block.children.first is Line) {
+        final firstChild = block.children.first as Line;
+        if (firstChild.style.attributes.containsKey(Attribute.header.key)) {
+          final level =
+              firstChild.style.attributes[Attribute.header.key]!.value as int;
+          switch (level) {
+            case 1:
+              top = defaultStyles.h1!.verticalSpacing.item1;
+              bottom = defaultStyles.h1!.verticalSpacing.item2;
+              break;
+            case 2:
+              top = defaultStyles.h2!.verticalSpacing.item1;
+              bottom = defaultStyles.h2!.verticalSpacing.item2;
+              break;
+            case 3:
+              top = defaultStyles.h3!.verticalSpacing.item1;
+              bottom = defaultStyles.h3!.verticalSpacing.item2;
+              break;
+            default:
+              throw 'Invalid level $level';
+          }
+        }
+      } else {
+        top = lineSpacing.item1;
+        bottom = lineSpacing.item2;
+      }
     } else {
       late Tuple2 lineSpacing;
       if (attrs.containsKey(Attribute.blockQuote.key)) {
@@ -286,8 +315,6 @@ class EditableTextBlock extends StatelessWidget {
         lineSpacing = defaultStyles!.lists!.lineSpacing;
       } else if (attrs.containsKey(Attribute.codeBlock.key)) {
         lineSpacing = defaultStyles!.code!.lineSpacing;
-      } else if (attrs.containsKey(Attribute.align.key)) {
-        lineSpacing = defaultStyles!.align!.lineSpacing;
       } else {
         // use paragraph linespacing as a default
         lineSpacing = defaultStyles!.paragraph!.lineSpacing;
@@ -296,9 +323,10 @@ class EditableTextBlock extends StatelessWidget {
       bottom = lineSpacing.item2;
     }
 
-    if (index == 1) {
-      top = 0.0;
-    }
+    /// block块第一个顶部为0，是有问题的，暂时注释掉
+    // if (index == 1) {
+    //   top = 0.0;
+    // }
 
     if (index == count) {
       bottom = 0.0;
