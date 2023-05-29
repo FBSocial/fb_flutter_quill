@@ -279,6 +279,8 @@ class EditableTextBlock extends StatelessWidget {
     } else if (attrs.containsKey(Attribute.align.key)) {
       /// align 里面可以存放 H1，H2，H3 和正文，其属性应该是使用的其对应的间距
       final Tuple2 lineSpacing = defaultStyles!.align!.lineSpacing;
+      top = lineSpacing.item1;
+      bottom = lineSpacing.item2;
       if (block.childCount > 0 && block.children.first is Line) {
         final firstChild = block.children.first as Line;
         if (firstChild.style.attributes.containsKey(Attribute.header.key)) {
@@ -301,9 +303,6 @@ class EditableTextBlock extends StatelessWidget {
               throw 'Invalid level $level';
           }
         }
-      } else {
-        top = lineSpacing.item1;
-        bottom = lineSpacing.item2;
       }
     } else {
       late Tuple2 lineSpacing;

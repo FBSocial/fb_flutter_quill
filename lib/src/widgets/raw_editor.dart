@@ -775,6 +775,14 @@ linkParse: widget.linkParse);
     } else if (attrs.containsKey(Attribute.list.key)) {
       return defaultStyles!.lists!.verticalSpacing;
     } else if (attrs.containsKey(Attribute.align.key)) {
+      if (node.childCount > 0 && node.children.first is Line) {
+        final firstChild = node.children.first as Line;
+        if (firstChild.style.attributes.containsKey(Attribute.header.key)) {
+          /// 如果此时align 包含了 （H1，H2，H3）的元素，直接在 text_block.dart _getSpacingForLine
+          /// 使用该边距
+          return const Tuple2(0, 0);
+        }
+      }
       return defaultStyles!.align!.verticalSpacing;
     }
     return const Tuple2(0, 0);
