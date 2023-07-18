@@ -167,7 +167,8 @@ class _TextLineState extends State<TextLine> {
     }
 
     final textSpan = _getTextSpanForWholeLine(context);
-    final strutStyle = StrutStyle.fromTextStyle(textSpan.style!);
+    final strutStyle = StrutStyle.fromTextStyle(textSpan.style!,
+        forceStrutHeight: widget.styles.forceStrutHeight);
     final textAlign = _getTextAlign();
     final child = RichText(
       key: _richTextKey,

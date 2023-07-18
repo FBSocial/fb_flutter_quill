@@ -178,6 +178,7 @@ class DefaultStyles {
     this.sizeHuge,
     this.at,
     this.channel,
+    this.forceStrutHeight,
   });
 
   final DefaultTextBlockStyle? h1;
@@ -206,6 +207,7 @@ class DefaultStyles {
   final DefaultTextBlockStyle? indent;
   final DefaultTextBlockStyle? align;
   final DefaultTextBlockStyle? leading;
+  final bool? forceStrutHeight;
 
   static DefaultStyles getInstance(BuildContext context) {
     final themeData = Theme.of(context);
@@ -366,6 +368,7 @@ class DefaultStyles {
       sizeHuge: other.sizeHuge ?? sizeHuge,
       at: other.at ?? at,
       channel: other.channel ?? channel,
+      forceStrutHeight: other.forceStrutHeight ?? forceStrutHeight,
     );
   }
 }
