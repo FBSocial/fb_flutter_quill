@@ -20,7 +20,7 @@ class Embeddable {
   //   return m;
   // }
   Map<String, dynamic> toJson() {
-    if (type == 'image' || type == 'video') {
+    if (type == 'image' || type == 'video' || type == 'question') {
       return data is Map ? data : toFormalJson();
     }
     return toFormalJson();
@@ -51,6 +51,9 @@ class Embeddable {
       if (type == 'video') {
         return VideoEmbed.fromJson(m);
       }
+      if (type == 'question') {
+        return QuestionEmbed.fromJson(m);
+      }
     }
     if (m.containsKey('image')) {
       return ImageEmbed.fromJson(m['image']);
@@ -60,6 +63,9 @@ class Embeddable {
     }
     if (m.containsKey('mention')) {
       return MentionEmbed.fromJson(m['mention']);
+    }
+    if (m.containsKey('question')) {
+      return QuestionEmbed.fromJson(m['question']);
     }
     return BlockEmbed(m.keys.first, m.values.first);
   }
@@ -78,6 +84,10 @@ class BlockEmbed extends Embeddable {
   static const String videoType = 'video';
 
   static BlockEmbed video(String videoUrl) => BlockEmbed(videoType, videoUrl);
+
+  static const String questionType = 'question';
+
+  static BlockEmbed question(String link) => BlockEmbed(questionType, link);
 
   static const String formulaType = 'formula';
   static BlockEmbed formula(String formula) => BlockEmbed(formulaType, formula);
@@ -253,6 +263,44 @@ class VideoEmbed extends Embeddable {
   }
 }
 
+/// 问题卡片
+class QuestionEmbed extends Embeddable {
+  QuestionEmbed({
+    required this.link,
+  }) : super('question', {
+          'link': link,
+          '_type': 'question',
+        });
+
+  final String? link;
+
+  @override
+  Map<String, dynamic> toJson() {
+    return <String, dynamic>{
+      'link': link ?? '',
+      '_type': 'question',
+    };
+  }
+
+  @override
+  Map<String, dynamic> toFormalJson() {
+    final res = <String, dynamic>{
+      'question': toJson(),
+    };
+    return res;
+  }
+
+  static QuestionEmbed fromJson(Map<String, dynamic> data) {
+    var tempLink = '';
+    if (data['link'] is String) {
+      tempLink = data['link'] as String;
+    }
+    return QuestionEmbed(
+      link: tempLink,
+    );
+  }
+}
+
 class MentionEmbed extends Embeddable {
   MentionEmbed({
     required this.denotationChar,
@@ -302,7 +350,7 @@ class MentionEmbed extends Embeddable {
   int get length {
     return value.length;
   }
-  
+
   static MentionEmbed fromJson(Map<String, dynamic> data) {
     return MentionEmbed(
       denotationChar: data['denotationChar'],
