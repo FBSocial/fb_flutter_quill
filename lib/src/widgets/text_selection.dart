@@ -4,7 +4,6 @@ import 'dart:math' as math;
 import 'package:flutter/foundation.dart';
 import 'package:flutter/gestures.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/rendering.dart';
 import 'package:flutter/scheduler.dart';
 
 import '../models/documents/nodes/node.dart';
@@ -755,7 +754,6 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
   /// another gesture from the touch is recognized.
   final GestureTapCancelCallback? onSingleTapCancel;
 
-
   /// onTapUp for mouse right click
   final GestureTapUpCallback? onSecondarySingleTapUp;
 
@@ -788,7 +786,7 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
   /// The frequency of calls is throttled to avoid excessive text layout
   /// operations in text fields. The throttling is controlled by the constant
   /// [_kDragSelectionUpdateThrottle].
-  final DragSelectionUpdateCallback? onDragSelectionUpdate;
+  final TextSelectionGestureDetector? onDragSelectionUpdate;
 
   /// Called when a mouse that was previously dragging is released.
   final GestureDragEndCallback? onDragSelectionEnd;

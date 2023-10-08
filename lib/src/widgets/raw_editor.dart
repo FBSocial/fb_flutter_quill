@@ -43,52 +43,52 @@ import 'text_selection.dart';
 import 'toolbar/search_dialog.dart';
 
 class RawEditor extends StatefulWidget {
-  const RawEditor(
-      {required this.controller,
-      required this.focusNode,
-      required this.scrollController,
-      required this.scrollBottomInset,
-      required this.cursorStyle,
-      required this.selectionColor,
-      required this.selectionCtrls,
-        required this.embedBuilder,
-      this.isSelectionInViewport,
-        this.caretOffset = 0,
-      Key? key,
-      this.scrollable = true,
-      this.padding = EdgeInsets.zero,
-      this.readOnly = false,
-      this.placeholder,
-      this.onLaunchUrl,
-      this.toolbarOptions = const ToolbarOptions(
-        copy: true,
-        cut: true,
-        paste: true,
-        selectAll: true,
-      ),
-      this.showSelectionHandles = false,
-      bool? showCursor,
-      this.textCapitalization = TextCapitalization.none,
-      this.maxHeight,
-      this.minHeight,
-      this.maxContentWidth,
-      this.customStyles,
-      this.customShortcuts,
-      this.customActions,
-      this.expands = false,
-      this.autoFocus = false,
-      this.keyboardAppearance = Brightness.light,
-      this.enableInteractiveSelection = true,
-      this.scrollPhysics,
-      this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
-      this.customStyleBuilder,
-      this.floatingCursorDisabled = false,
-      this.onImagePaste,
-      this.mentionBuilder,
-      this.emojiBuilder,
-      this.pasteExtension,
-      this.linkParse,})
-      : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
+  const RawEditor({
+    required this.controller,
+    required this.focusNode,
+    required this.scrollController,
+    required this.scrollBottomInset,
+    required this.cursorStyle,
+    required this.selectionColor,
+    required this.selectionCtrls,
+    required this.embedBuilder,
+    this.isSelectionInViewport,
+    this.caretOffset = 0,
+    Key? key,
+    this.scrollable = true,
+    this.padding = EdgeInsets.zero,
+    this.readOnly = false,
+    this.placeholder,
+    this.onLaunchUrl,
+    this.toolbarOptions = const ToolbarOptions(
+      copy: true,
+      cut: true,
+      paste: true,
+      selectAll: true,
+    ),
+    this.showSelectionHandles = false,
+    bool? showCursor,
+    this.textCapitalization = TextCapitalization.none,
+    this.maxHeight,
+    this.minHeight,
+    this.maxContentWidth,
+    this.customStyles,
+    this.customShortcuts,
+    this.customActions,
+    this.expands = false,
+    this.autoFocus = false,
+    this.keyboardAppearance = Brightness.light,
+    this.enableInteractiveSelection = true,
+    this.scrollPhysics,
+    this.linkActionPickerDelegate = defaultLinkActionPickerDelegate,
+    this.customStyleBuilder,
+    this.floatingCursorDisabled = false,
+    this.onImagePaste,
+    this.mentionBuilder,
+    this.emojiBuilder,
+    this.pasteExtension,
+    this.linkParse,
+  })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
             'maxHeight cannot be null'),
@@ -672,31 +672,31 @@ class RawEditorState extends EditorState
       } else if (node is Block) {
         final attrs = node.style.attributes;
         final editableTextBlock = EditableTextBlock(
-block: node,
-controller: widget.controller,
-textDirection: _textDirection,
-scrollBottomInset: widget.scrollBottomInset,
-verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
-textSelection: widget.controller.selection,
-color: widget.selectionColor,
-styles: _styles,
-enableInteractiveSelection: widget.enableInteractiveSelection,
-hasFocus: _hasFocus,
+            block: node,
+            controller: widget.controller,
+            textDirection: _textDirection,
+            scrollBottomInset: widget.scrollBottomInset,
+            verticalSpacing: _getVerticalSpacingForBlock(node, _styles),
+            textSelection: widget.controller.selection,
+            color: widget.selectionColor,
+            styles: _styles,
+            enableInteractiveSelection: widget.enableInteractiveSelection,
+            hasFocus: _hasFocus,
 // NOTE: 2022/3/2 调整默认间距16=》8
-contentPadding: attrs.containsKey(Attribute.codeBlock.key)
-? const EdgeInsets.all(8)
-    : null,
-embedBuilder: widget.embedBuilder,
-linkActionPicker: _linkActionPicker,
-onLaunchUrl: widget.onLaunchUrl,
-cursorCont: _cursorCont,
-indentLevelCounts: indentLevelCounts,
-onCheckboxTap: _handleCheckboxTap,
-readOnly: widget.readOnly,
-mentionBuilder: widget.mentionBuilder,
-customStyleBuilder: widget.customStyleBuilder,
-emojiBuilder: widget.emojiBuilder,
-linkParse: widget.linkParse);
+            contentPadding: attrs.containsKey(Attribute.codeBlock.key)
+                ? const EdgeInsets.all(8)
+                : null,
+            embedBuilder: widget.embedBuilder,
+            linkActionPicker: _linkActionPicker,
+            onLaunchUrl: widget.onLaunchUrl,
+            cursorCont: _cursorCont,
+            indentLevelCounts: indentLevelCounts,
+            onCheckboxTap: _handleCheckboxTap,
+            readOnly: widget.readOnly,
+            mentionBuilder: widget.mentionBuilder,
+            customStyleBuilder: widget.customStyleBuilder,
+            emojiBuilder: widget.emojiBuilder,
+            linkParse: widget.linkParse);
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
       } else {
@@ -1277,13 +1277,12 @@ linkParse: widget.linkParse);
     if (text != null) {
       _replaceText(
           ReplaceTextIntent(textEditingValue, text.text!, selection, cause));
-    final data = await Clipboard.getData(Clipboard.kTextPlain);
-    if (data == null) {
-      /// NOTE: 响应外部粘贴回调
-      widget.pasteExtension?.call();
-      return;
-    }
-
+      final data = await Clipboard.getData(Clipboard.kTextPlain);
+      if (data == null) {
+        /// NOTE: 响应外部粘贴回调
+        widget.pasteExtension?.call();
+        return;
+      }
 
       bringIntoView(textEditingValue.selection.extent);
 
@@ -1521,6 +1520,14 @@ linkParse: widget.linkParse);
     }
   }
 
+  @override
+  void insertContent(KeyboardInsertedContent content) {
+    // TODO: implement insertContent
+  }
+
+  @override
+  // TODO: implement liveTextInputEnabled
+  bool get liveTextInputEnabled => throw UnimplementedError();
 }
 
 class _Editor extends MultiChildRenderObjectWidget {
