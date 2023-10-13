@@ -625,18 +625,21 @@ class RawEditorState extends EditorState
       return insertTabCharacter();
     }
 
-    if (node.isNotEmpty && (node.first as leaf.Text).value.isNotEmpty) {
-      return insertTabCharacter();
-    }
-
     final parentBlock = parent;
     if (parentBlock.style.containsKey(Attribute.ol.key) ||
         parentBlock.style.containsKey(Attribute.ul.key) ||
         parentBlock.style.containsKey(Attribute.checked.key)) {
+      if (node.isNotEmpty &&
+          (node.first as leaf.Text).value.isNotEmpty &&
+          controller.selection.base.offset > node.documentOffset) {
+        return insertTabCharacter();
+      }
       controller.indentSelection(!event.isShiftPressed);
       return KeyEventResult.handled;
     }
-
+    if (node.isNotEmpty && (node.first as leaf.Text).value.isNotEmpty) {
+      return insertTabCharacter();
+    }
     return insertTabCharacter();
   }
 
@@ -719,13 +722,25 @@ class RawEditorState extends EditorState
   List<Widget> _buildChildren(Document doc, BuildContext context) {
     final result = <Widget>[];
     final indentLevelCounts = <int, int>{};
+    // this need for several ordered list in document
+    // we need to reset indents Map, if list finished
+    // List finished when there is node without Attribute.ol in styles
+    // So in this case we set clearIndents=true and send it
+    // to the next EditableTextBlock
+    var prevNodeOl = false;
+    var clearIndents = false;
+
     for (final node in doc.root.children) {
+      final attrs = node.style.attributes;
+      if (prevNodeOl && attrs[Attribute.list.key] != Attribute.ol) {
+        clearIndents = true;
+      }
+      prevNodeOl = attrs[Attribute.list.key] == Attribute.ol;
       if (node is Line) {
         final editableTextLine = _getEditableTextLineFromNode(node, context);
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextLine));
       } else if (node is Block) {
-        final attrs = node.style.attributes;
         final editableTextBlock = EditableTextBlock(
           block: node,
           controller: widget.controller,
@@ -746,6 +761,7 @@ class RawEditorState extends EditorState
           onLaunchUrl: widget.onLaunchUrl,
           cursorCont: _cursorCont,
           indentLevelCounts: indentLevelCounts,
+          clearIndents: clearIndents,
           onCheckboxTap: _handleCheckboxTap,
           readOnly: widget.readOnly,
           mentionBuilder: widget.mentionBuilder,
@@ -756,6 +772,7 @@ class RawEditorState extends EditorState
         );
         result.add(Directionality(
             textDirection: getDirectionOfNode(node), child: editableTextBlock));
+        clearIndents = false;
       } else {
         throw StateError('Unreachable.');
       }
