@@ -450,7 +450,8 @@ class Delta {
           final embedType = Embeddable.fromJson(operation.value).type;
           final isBlockEmbed = embedType == 'image' ||
               embedType == 'video' ||
-              embedType == 'divider';
+              embedType == 'divider' ||
+              embedType == 'question';
           final next = i < length - 1 ? operationList[i + 1] : null;
           if (isBlockEmbed && next != null && next.value is Map) {
             final nextEmbedType = Embeddable.fromJson(next.value).type;
@@ -478,7 +479,8 @@ class Delta {
             final embedType = Embeddable.fromJson(prev.value).type;
             final isBlockEmbed = embedType == 'image' ||
                 embedType == 'video' ||
-                embedType == 'divider';
+                embedType == 'divider' ||
+                embedType == 'question';
             // 修改
             if (isBlockEmbed &&
                 operation.value is String &&
@@ -491,7 +493,8 @@ class Delta {
             final embedType = Embeddable.fromJson(next.value).type;
             final isBlockEmbed = embedType == 'image' ||
                 embedType == 'video' ||
-                embedType == 'divider';
+                embedType == 'divider' ||
+                embedType == 'question';
             if (isBlockEmbed && !operation.value.endsWith('\n')) {
               operationValue =
                   '${(operationValue == null ? operation.value : operationValue)}\n';
