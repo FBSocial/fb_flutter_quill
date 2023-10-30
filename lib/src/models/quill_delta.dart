@@ -438,6 +438,12 @@ class Delta {
   List toFormalJson() =>
       toList().map((operation) => operation.toFormalJson()).toList();
 
+  bool _isBlockEmbed(String embedType) =>
+      embedType == 'image' ||
+      embedType == 'video' ||
+      embedType == 'divider' ||
+      embedType == 'question';
+
   /// Returns JSON-serializable version of this delta.
   List toJson() {
     final operationList = toList();
@@ -448,22 +454,15 @@ class Delta {
         if (operation.value is Map) {
           // Embeddable
           final embedType = Embeddable.fromJson(operation.value).type;
-          final isBlockEmbed = embedType == 'image' ||
-              embedType == 'video' ||
-              embedType == 'divider' ||
-              embedType == 'question';
+          final isBlockEmbed = _isBlockEmbed(embedType);
           final next = i < length - 1 ? operationList[i + 1] : null;
           if (isBlockEmbed && next != null && next.value is Map) {
             final nextEmbedType = Embeddable.fromJson(next.value).type;
-            final isNextBlockEmbed = /*nextEmbedType == 'image' ||*/
-                nextEmbedType == 'video' || nextEmbedType == 'divider';
+            final isNextBlockEmbed = _isBlockEmbed(nextEmbedType);
             if (isNextBlockEmbed) {
               jsonList.add(operation.toJson());
-
-              /// NOTE: 2022/3/27 在不清楚业务逻辑的情况下，保守操作，进行排除
-              if (nextEmbedType != 'image') {
-                jsonList.add({Operation.insertKey: '\n'});
-              }
+	      // 两个图片/视频/问题块类型之间插入一个\n，使其独占一行避免显示的时候挤压变形
+              jsonList.add({Operation.insertKey: '\n'});
               continue;
             }
           }
@@ -477,10 +476,7 @@ class Delta {
           // If prev is image.
           if (prev != null && prev.value is Map) {
             final embedType = Embeddable.fromJson(prev.value).type;
-            final isBlockEmbed = embedType == 'image' ||
-                embedType == 'video' ||
-                embedType == 'divider' ||
-                embedType == 'question';
+            final isBlockEmbed = _isBlockEmbed(embedType);
             // 修改
             if (isBlockEmbed &&
                 operation.value is String &&
@@ -491,10 +487,7 @@ class Delta {
           // If next is image.
           if (next != null && next.value is Map) {
             final embedType = Embeddable.fromJson(next.value).type;
-            final isBlockEmbed = embedType == 'image' ||
-                embedType == 'video' ||
-                embedType == 'divider' ||
-                embedType == 'question';
+            final isBlockEmbed = _isBlockEmbed(embedType);
             if (isBlockEmbed && !operation.value.endsWith('\n')) {
               operationValue =
                   '${(operationValue == null ? operation.value : operationValue)}\n';
