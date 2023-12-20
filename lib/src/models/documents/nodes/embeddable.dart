@@ -318,7 +318,8 @@ class MentionEmbed extends Embeddable {
     required this.id,
     required this.value,
     required this.prefixChar,
-  }) : super('mention', {
+    String? type,
+  }) : super(type ?? 'mention', {
           'denotationChar': denotationChar,
           'id': id,
           'value': value,
@@ -372,12 +373,13 @@ class MentionEmbed extends Embeddable {
   }
 
   static MentionEmbed fromAttribute(
-      String id, String prefixChar, String value) {
+      String id, String prefixChar, String value, {String? type}) {
     return MentionEmbed(
       denotationChar: '',
       id: id,
       value: value,
       prefixChar: prefixChar,
+      type: type,
     );
   }
 }

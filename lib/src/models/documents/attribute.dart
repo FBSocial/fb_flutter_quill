@@ -54,6 +54,7 @@ class Attribute<T> {
     Attribute.script.key: Attribute.script,
     Attribute.at.key: Attribute.at,
     Attribute.channel.key: Attribute.channel,
+    Attribute.tag.key: Attribute.tag,
   });
 
   static const BoldAttribute bold = BoldAttribute();
@@ -108,7 +109,9 @@ class Attribute<T> {
   static final AtAttribute at = AtAttribute(null);
 
   static final ChannelAttribute channel = ChannelAttribute(null);
-  
+
+  static final TagAttribute tag = TagAttribute(null);
+
   static const String mobileWidth = 'mobileWidth';
 
   static const String mobileHeight = 'mobileHeight';
@@ -129,6 +132,7 @@ class Attribute<T> {
     Attribute.placeholder.key,
     Attribute.at.key,
     Attribute.channel.key,
+    Attribute.tag.key,
   };
 
   static final Set<String> blockKeys = LinkedHashSet.of({
@@ -377,4 +381,8 @@ class AtAttribute extends Attribute<String?> {
 
 class ChannelAttribute extends Attribute<String?> {
   ChannelAttribute(String? val) : super('channel', AttributeScope.INLINE, val);
+}
+
+class TagAttribute extends Attribute<String?> {
+  TagAttribute(String? val) : super('tag', AttributeScope.INLINE, val);
 }
