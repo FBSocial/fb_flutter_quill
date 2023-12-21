@@ -101,6 +101,20 @@ class Operation {
       //       embed.toJson(), attributes);
       // }
 
+      /// 带有{"_type": "link_card"}属性的link转成链接卡片类型LinkCardEmbed
+      if (attributes != null &&
+          attributes.containsKey('_type') &&
+          attributes['_type'] is String) {
+        final type = attributes['_type'];
+        if (type == 'link_card' && attributes.containsKey('link')) {
+          final link = attributes['link'] as String;
+          final showText = data is String ? data : '';
+          final embed = LinkCardEmbed(link: link, showText: showText);
+          // Embed长度默认是1
+          return Operation._(
+              Operation.insertKey, embed.length, embed.toJson(), attributes);
+        }
+      }
       final dataLength = data is String ? data.length : 1;
       return Operation._(
           Operation.insertKey, dataLength, data, map[Operation.attributesKey]);
@@ -165,6 +179,17 @@ class Operation {
           Map<String, dynamic> attrMap =
               attributes != null ? Map.from(attributes!) : {};
           attrMap[embed.attributeKey] = embed.id;
+          json[Operation.attributesKey] = attrMap;
+        } else if (embed is LinkCardEmbed) {
+          json[key] = embed.showText;
+          Map<String, dynamic> attrMap =
+              attributes != null ? Map.from(attributes!) : {};
+          if (!attrMap.containsKey('_type')) {
+            attrMap['_type'] = embed.type;
+          }
+          if (!attrMap.containsKey('link')) {
+            attrMap['link'] = embed.link;
+          }
           json[Operation.attributesKey] = attrMap;
         } else {
           json[key] = embed.toJson();
@@ -653,6 +678,9 @@ class Delta {
         otherOp.attributes,
         keepNull: thisOp.isRetain,
       );
+      if (attributes != null) {
+        print('==== attributes: $attributes');
+      }
       if (thisOp.isRetain) {
         return Operation.retain(thisOp.length, attributes);
       } else if (thisOp.isInsert) {

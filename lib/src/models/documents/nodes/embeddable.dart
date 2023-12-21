@@ -20,7 +20,10 @@ class Embeddable {
   //   return m;
   // }
   Map<String, dynamic> toJson() {
-    if (type == 'image' || type == 'video' || type == 'question') {
+    if (type == 'image' ||
+        type == 'video' ||
+        type == 'question' ||
+        type == 'link_card') {
       return data is Map ? data : toFormalJson();
     }
     return toFormalJson();
@@ -66,6 +69,13 @@ class Embeddable {
     }
     if (m.containsKey('question')) {
       return QuestionEmbed.fromJson(m['question']);
+    }
+    if (m.containsKey('attributes') && m['attributes'] is Map) {
+      final attributes = m['attributes'] as Map;
+      if (attributes.containsKey('_type') &&
+          attributes['_type'] == 'link_card') {
+        return LinkCardEmbed.fromJson(m);
+      }
     }
     return BlockEmbed(m.keys.first, m.values.first);
   }
@@ -358,10 +368,10 @@ class MentionEmbed extends Embeddable {
     };
   }
 
-  @override
-  int get length {
-    return value.length;
-  }
+  // @override
+  // int get length {
+  //   return value.length;
+  // }
 
   static MentionEmbed fromJson(Map<String, dynamic> data) {
     return MentionEmbed(
@@ -372,14 +382,57 @@ class MentionEmbed extends Embeddable {
     );
   }
 
-  static MentionEmbed fromAttribute(
-      String id, String prefixChar, String value, {String? type}) {
+  static MentionEmbed fromAttribute(String id, String prefixChar, String value,
+      {String? type}) {
     return MentionEmbed(
       denotationChar: '',
       id: id,
       value: value,
       prefixChar: prefixChar,
       type: type,
+    );
+  }
+}
+
+class LinkCardEmbed extends Embeddable {
+  LinkCardEmbed({
+    required this.link,
+    required this.showText,
+    String? type,
+  }) : super(type ?? 'link_card', null);
+
+  String link;
+  String showText;
+
+  @override
+  Map<String, dynamic> toFormalJson() {
+    return <String, dynamic>{
+      'insert': showText,
+      'attributes': {
+        'link': link,
+        '_type': type,
+      }
+    };
+  }
+
+  static LinkCardEmbed fromJson(Map<String, dynamic> data) {
+    // print('****** LinkCardEmbed fromJson: $data');
+    var link = '';
+    var showText = '';
+    if (data.containsKey('insert') && data['insert'] is String) {
+      showText = data['insert'];
+    }
+    if (data.containsKey('attributes') && data['attributes'] is Map) {
+      final Map<String, dynamic> attributes = data['attributes'];
+      if (attributes.containsKey('link') && attributes['link'] is String) {
+        link = attributes['link'];
+      }
+      if (attributes.containsKey('_type') is String &&
+          attributes['_type'] == 'link_card') {}
+    }
+    return LinkCardEmbed(
+      link: link,
+      showText: showText,
     );
   }
 }
