@@ -383,7 +383,13 @@ class QuillEditor extends StatefulWidget {
 
   // Returns whether gesture is handled
   final bool Function(
-      TapUpDetails details, TextPosition Function(Offset offset))? onTapUp;
+      TapUpDetails details,
+      /*单击手势释放的位置获取回调函数*/
+      TextPosition Function(Offset offset) getPositionForOffset,
+      /*获取选中区域中心点位置回调函数*/
+      Offset? Function() getSelectionMidPoint,
+      /*显示复制粘贴菜单的回调函数*/
+      void Function() doShowToolbar)? onTapUp;
 
   // Returns whether gesture is handled
   final bool Function(
@@ -734,11 +740,59 @@ class _QuillEditorSelectionGestureDetectorBuilder
             pressed.contains(LogicalKeyboardKey.shiftRight));
   }
 
+  /// 获取选中区域中点位置
+  Offset? getSelectionMidPoint() {
+    if (renderEditor == null) return null;
+    Offset? midpoint;
+    // Find the horizontal midpoint, just above the selected text.
+    List<TextSelectionPoint> endpoints = [];
+    final selection = renderEditor!.selection;
+    try {
+      // building with an invalid selection with throw an exception
+      // This happens where the selection has changed, but the toolbar
+      // hasn't been dismissed yet.
+      endpoints = renderEditor!.getEndpointsForSelection(selection);
+    } catch (_) {
+      print('getEndpointsForSelection failed!');
+      return midpoint;
+    }
+    if (endpoints.isNotEmpty) {
+      final editingRegion = Rect.fromPoints(
+        renderEditor!.localToGlobal(Offset.zero),
+        renderEditor!
+            .localToGlobal(renderEditor!.size.bottomRight(Offset.zero)),
+      );
+
+      final isMultiline = endpoints.last.point.dy - endpoints.first.point.dy >
+          renderEditor!.preferredLineHeight(selection.extent) / 2;
+
+      // If the selected text spans more than 1 line, horizontally center the toolbar.
+      // Derived from both iOS and Android.
+      final midX = isMultiline
+          ? editingRegion.width / 2
+          : (endpoints.first.point.dx + endpoints.last.point.dx) / 2;
+
+      midpoint = Offset(
+        midX,
+        // The y-coordinate won't be made use of most likely.
+        endpoints[0].point.dy -
+            renderEditor!.preferredLineHeight(selection.extent),
+      );
+    }
+    return midpoint;
+  }
+
+  /// 显示复制粘贴菜单
+  void doShowToolbar() {
+    editor?.showToolbar();
+  }
+
   @override
   void onSingleTapUp(TapUpDetails details) {
     if (_state.widget.onTapUp != null &&
         renderEditor != null &&
-        _state.widget.onTapUp!(details, renderEditor!.getPositionForOffset)) {
+        _state.widget.onTapUp!(details, renderEditor!.getPositionForOffset,
+            getSelectionMidPoint, doShowToolbar)) {
       return;
     }
 
