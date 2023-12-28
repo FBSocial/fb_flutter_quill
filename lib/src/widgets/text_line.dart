@@ -457,11 +457,13 @@ class _TextLineState extends State<TextLine> {
       // 修改，at 和 channel使用默认的超链接样式
       Attribute.at.key: defaultStyles.link,
       Attribute.channel.key: defaultStyles.link,
+      Attribute.tag.key: defaultStyles.link,
       Attribute.underline.key: defaultStyles.underline,
       Attribute.strikeThrough.key: defaultStyles.strikeThrough,
       // NOTE: 2022/3/2 添加@与#样式
       Attribute.at.key: defaultStyles.at,
       Attribute.channel.key: defaultStyles.channel,
+      Attribute.tag.key: defaultStyles.tag,
     }.forEach((k, s) {
       if (nodeStyle.values.any((v) => v.key == k)) {
         if (k == Attribute.underline.key || k == Attribute.strikeThrough.key) {

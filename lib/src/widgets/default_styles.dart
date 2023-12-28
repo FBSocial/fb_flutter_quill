@@ -160,6 +160,7 @@ class DefaultStyles {
     this.sizeHuge,
     this.at,
     this.channel,
+    this.tag,
   });
 
   final DefaultTextBlockStyle? h1;
@@ -173,6 +174,7 @@ class DefaultStyles {
   final TextStyle? strikeThrough;
   final TextStyle? at;
   final TextStyle? channel;
+  final TextStyle? tag;
 
   /// Theme of inline code.
   final InlineCodeStyle? inlineCode;
@@ -320,6 +322,9 @@ class DefaultStyles {
       channel: TextStyle(
         color: themeData.colorScheme.secondary,
       ),
+      tag: TextStyle(
+        color: themeData.colorScheme.secondary,
+      ),
     );
   }
 
@@ -349,6 +354,7 @@ class DefaultStyles {
       sizeHuge: other.sizeHuge ?? sizeHuge,
       at: other.at ?? at,
       channel: other.channel ?? channel,
+      tag: other.tag?? tag,
     );
   }
 }

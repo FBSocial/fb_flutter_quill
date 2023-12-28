@@ -281,6 +281,12 @@ class Embed extends Leaf {
     if (value is MentionEmbed) {
       return (value as MentionEmbed).value;
     }
+    if (value is LinkCardEmbed) {
+      return ' ';
+    }
+    if (value is ImageEmbed || value is VideoEmbed) {
+      return '\n';
+    }
     return kObjectReplacementCharacter;
   }
 
