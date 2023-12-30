@@ -154,7 +154,7 @@ class EditableTextBlock extends StatelessWidget {
             mentionBuilder: mentionBuilder,
             linkParse: linkParse,
           ),
-          _getIndentWidth(),
+          _getIndentWidth(defaultStyles),
           _getSpacingForLine(line, index, count, defaultStyles),
           textDirection,
           textSelection,
@@ -174,6 +174,14 @@ class EditableTextBlock extends StatelessWidget {
       Map<int, int> indentLevelCounts, int count) {
     final defaultStyles = QuillStyles.getStyles(context, false);
     final attrs = line.style.attributes;
+    double indentWidth = 32.0;
+    double padding = 16;
+
+    final codeStyle = defaultStyles!.code;
+    if (codeStyle is TextCodeBlockStyle) {
+      indentWidth = codeStyle.indentWidth;
+      padding = codeStyle.padding;
+    }
     if (attrs[Attribute.list.key] == Attribute.ol) {
       return QuillNumberPoint(
         index: index,
@@ -181,7 +189,7 @@ class EditableTextBlock extends StatelessWidget {
         count: count,
         style: defaultStyles!.leading!.style,
         attrs: attrs,
-        width: 32,
+        width: indentWidth,
         padding: 8,
       );
     }
@@ -190,7 +198,7 @@ class EditableTextBlock extends StatelessWidget {
       return QuillBulletPoint(
         style:
             defaultStyles!.leading!.style.copyWith(fontWeight: FontWeight.bold),
-        width: 32,
+        width: indentWidth,
       );
     }
 
@@ -221,16 +229,16 @@ class EditableTextBlock extends StatelessWidget {
         count: count,
         style: defaultStyles!.code!.style
             .copyWith(color: defaultStyles.code!.style.color!.withOpacity(0.4)),
-        width: 32,
+        width: indentWidth,
         attrs: attrs,
-        padding: 16,
+        padding: padding,
         withDot: false,
       );
     }
     return null;
   }
 
-  double _getIndentWidth() {
+  double _getIndentWidth(DefaultStyles? defaultStyles) {
     final attrs = block.style.attributes;
 
     final indent = attrs[Attribute.indent.key];
@@ -247,7 +255,12 @@ class EditableTextBlock extends StatelessWidget {
 
     if (attrs.containsKey(Attribute.list.key) ||
         attrs.containsKey(Attribute.codeBlock.key)) {
-      baseIndent = 32.0;
+      double indentWidth = 32.0;
+      final codeStyle = defaultStyles!.code;
+      if (codeStyle is TextCodeBlockStyle) {
+        indentWidth = codeStyle.indentWidth;
+      }
+      baseIndent = indentWidth;
     }
 
     return baseIndent + extraIndent;
