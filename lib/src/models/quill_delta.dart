@@ -494,9 +494,8 @@ class Delta {
           }
         } else {
           // Text
-          final index = operationList.indexOf(operation);
           final prev = i > 0 ? operationList[i - 1] : null;
-          final next = index < length - 1 ? operationList[index + 1] : null;
+          final next = i < length - 1 ? operationList[i + 1] : null;
           final operationJson = operation.toJson();
           String? operationValue;
           // If prev is image.
