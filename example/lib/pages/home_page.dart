@@ -173,7 +173,7 @@ class _HomePageState extends State<HomePage> {
         expands: false,
         padding: EdgeInsets.zero,
         onImagePaste: _onImagePaste,
-        onTapUp: (details, p1) {
+        onTapUp: (details, p1, p2, p3) {
           return _onTripleClickSelection();
         },
         customStyles: DefaultStyles(
@@ -208,7 +208,7 @@ class _HomePageState extends State<HomePage> {
           placeholder: 'Add content',
           expands: false,
           padding: EdgeInsets.zero,
-          onTapUp: (details, p1) {
+          onTapUp: (details, p1, p2, p3) {
             return _onTripleClickSelection();
           },
           customStyles: DefaultStyles(
