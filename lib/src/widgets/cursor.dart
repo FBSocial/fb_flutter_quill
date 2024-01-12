@@ -106,7 +106,7 @@ class CursorCont extends ChangeNotifier {
         color = ValueNotifier(style.color) {
     _blinkOpacityController =
         AnimationController(vsync: tickerProvider, duration: _fadeDuration);
-    _blinkOpacityController.addListener(_onColorTick);
+    _blinkOpacityController?.addListener(_onColorTick);
   }
 
   // The time it takes for the cursor to fade from fully opaque to fully
@@ -126,7 +126,7 @@ class CursorCont extends ChangeNotifier {
   final ValueNotifier<Color> color;
   final ValueNotifier<bool> blink;
 
-  late final AnimationController _blinkOpacityController;
+  AnimationController? _blinkOpacityController;
 
   Timer? _cursorTimer;
   bool _targetCursorVisibility = false;
@@ -158,11 +158,12 @@ class CursorCont extends ChangeNotifier {
 
   @override
   void dispose() {
-    _blinkOpacityController.removeListener(_onColorTick);
+    _blinkOpacityController?.removeListener(_onColorTick);
     stopCursorTimer();
 
     _isDisposed = true;
-    _blinkOpacityController.dispose();
+    _blinkOpacityController?.dispose();
+    _blinkOpacityController = null;
     show.dispose();
     blink.dispose();
     color.dispose();
@@ -181,9 +182,9 @@ class CursorCont extends ChangeNotifier {
       //
       // These values and curves have been obtained through eyeballing, so are
       // likely not exactly the same as the values for native iOS.
-      _blinkOpacityController.animateTo(targetOpacity, curve: Curves.easeOut);
+      _blinkOpacityController?.animateTo(targetOpacity, curve: Curves.easeOut);
     } else {
-      _blinkOpacityController.value = targetOpacity;
+      _blinkOpacityController?.value = targetOpacity;
     }
   }
 
@@ -198,7 +199,7 @@ class CursorCont extends ChangeNotifier {
     }
 
     _targetCursorVisibility = true;
-    _blinkOpacityController.value = 1.0;
+    _blinkOpacityController?.value = 1.0;
 
     if (style.opacityAnimates) {
       _cursorTimer = Timer.periodic(_blinkWaitForStart, _waitForStart);
@@ -211,12 +212,16 @@ class CursorCont extends ChangeNotifier {
     _cursorTimer?.cancel();
     _cursorTimer = null;
     _targetCursorVisibility = false;
-    _blinkOpacityController.value = 0.0;
+    try {
+      _blinkOpacityController?.value = 0.0;
 
-    if (style.opacityAnimates) {
-      _blinkOpacityController
-        ..stop()
-        ..value = 0.0;
+      if (style.opacityAnimates && _blinkOpacityController != null) {
+        _blinkOpacityController!
+          ..stop()
+          ..value = 0.0;
+      }
+    } catch(error) {
+      print('cursor stopCursorTimer error: ${error.toString()}');
     }
   }
 
@@ -232,8 +237,10 @@ class CursorCont extends ChangeNotifier {
   }
 
   void _onColorTick() {
-    color.value = _style.color.withOpacity(_blinkOpacityController.value);
-    blink.value = show.value && _blinkOpacityController.value > 0;
+    if (_blinkOpacityController != null) {
+      color.value = _style.color.withOpacity(_blinkOpacityController!.value);
+      blink.value = show.value && _blinkOpacityController!.value > 0;
+    }
   }
 }
 
