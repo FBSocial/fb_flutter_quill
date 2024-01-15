@@ -1034,6 +1034,7 @@ class _EditorTextSelectionGestureDetectorState
       gestures[LongPressGestureRecognizer] =
           GestureRecognizerFactoryWithHandlers<LongPressGestureRecognizer>(
         () => LongPressGestureRecognizer(
+            duration: Duration(milliseconds: 300),
             debugOwner: this,
             supportedDevices: <PointerDeviceKind>{PointerDeviceKind.touch}),
         (instance) {
