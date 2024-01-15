@@ -366,8 +366,8 @@ class _TextLineState extends State<TextLine> {
         text: textNode.value,
         style: _getInlineTextStyle(
             textNode, defaultStyles, nodeStyle, lineStyle, true),
-        recognizer: canLaunchLinks ? _getRecognizer(node) : null,
-        mouseCursor: canLaunchLinks ? SystemMouseCursors.click : null,
+        recognizer: canLaunchLinks && widget.readOnly ? _getRecognizer(node) : null,
+        mouseCursor: canLaunchLinks && widget.readOnly ? SystemMouseCursors.click : null,
       );
     } else {
       final emojiSeparator = String.fromCharCode(0);
@@ -398,21 +398,10 @@ class _TextLineState extends State<TextLine> {
             ));
           }
         } else {
-          final _isLink = e.startsWith('http');
           children.add(TextSpan(
             text: e,
             style: _getInlineTextStyle(
-                textNode, defaultStyles, nodeStyle, lineStyle, _isLink),
-
-            /// NOTE： 优先采用自定义的链接跳转
-            recognizer: _isLink && canLaunchLinks
-                ? (widget.linkParse != null
-                    ? (TapGestureRecognizer()
-                      ..onTap = () => widget.linkParse?.call(e))
-                    : _getRecognizer(node))
-                : null,
-            mouseCursor:
-                _isLink && canLaunchLinks ? SystemMouseCursors.click : null,
+                textNode, defaultStyles, nodeStyle, lineStyle, false),
           ));
         }
       }

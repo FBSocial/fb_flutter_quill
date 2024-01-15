@@ -44,8 +44,7 @@ class Rules {
     const PreserveLineStyleOnSplitRule(),
     const ResetLineFormatOnNewLineRule(),
     const AutoFormatLinksRule(),
-    // 修改，移除rule
-    // const AutoFormatMultipleLinksRule(),
+    const AutoFormatMultipleLinksRule(),
     const PreserveInlineStylesRule(),
     const CatchAllInsertRule(),
     const EnsureEmbedLineRule(),
