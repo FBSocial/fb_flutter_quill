@@ -248,7 +248,7 @@ class EditorTextSelectionOverlay {
     }
     return Visibility(
         visible: handlesVisible,
-        child: _TextSelectionHandleOverlay(
+        child: TextSelectionHandleOverlay(
           onSelectionHandleChanged: (newSelection) {
             _handleSelectionHandleChanged(newSelection, position);
           },
@@ -435,8 +435,8 @@ class EditorTextSelectionOverlay {
 }
 
 /// This widget represents a single draggable text selection handle.
-class _TextSelectionHandleOverlay extends StatefulWidget {
-  const _TextSelectionHandleOverlay({
+class TextSelectionHandleOverlay extends StatefulWidget {
+  const TextSelectionHandleOverlay({
     required this.selection,
     required this.position,
     required this.startHandleLayerLink,
@@ -476,7 +476,7 @@ class _TextSelectionHandleOverlay extends StatefulWidget {
 }
 
 class _TextSelectionHandleOverlayState
-    extends State<_TextSelectionHandleOverlay>
+    extends State<TextSelectionHandleOverlay>
     with SingleTickerProviderStateMixin {
   // ignore: unused_field
   late Offset _dragPosition;
@@ -505,7 +505,7 @@ class _TextSelectionHandleOverlayState
   }
 
   @override
-  void didUpdateWidget(_TextSelectionHandleOverlay oldWidget) {
+  void didUpdateWidget(TextSelectionHandleOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
     oldWidget._visibility.removeListener(_handleVisibilityChanged);
     _handleVisibilityChanged();
