@@ -182,6 +182,7 @@ class QuillEditor extends StatefulWidget {
       this.onLaunchUrl,
       this.onTapDown,
       this.onTapUp,
+      this.onDoubleTapDown,
       this.onSingleLongTapStart,
       this.onSingleLongTapMoveUpdate,
       this.onSingleLongTapEnd,
@@ -390,6 +391,11 @@ class QuillEditor extends StatefulWidget {
       Offset? Function() getSelectionMidPoint,
       /*显示复制粘贴菜单的回调函数*/
       void Function() doShowToolbar)? onTapUp;
+
+  // Returns whether gesture is handled
+  final bool Function(
+      TapDownDetails details,
+      TextPosition Function(Offset offset) getPositionForOffset)? onDoubleTapDown;
 
   // Returns whether gesture is handled
   final bool Function(
@@ -843,6 +849,18 @@ class _QuillEditorSelectionGestureDetectorBuilder
     } finally {
       _state._requestKeyboard();
     }
+  }
+
+  @protected
+  void onDoubleTapDown(TapDownDetails details) {
+    if (_state.widget.onDoubleTapDown != null) {
+      if (renderEditor != null &&
+          _state.widget.onDoubleTapDown!(
+              details, renderEditor!.getPositionForOffset)) {
+        return;
+      }
+    }
+    super.onDoubleTapDown(details);
   }
 
   @override
