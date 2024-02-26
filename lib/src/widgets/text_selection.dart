@@ -684,6 +684,7 @@ class _TextSelectionHandleOverlayState
   }
 }
 
+typedef DragSelectionUpdateCallback = void Function(DragStartDetails start,DragUpdateDetails update);
 /// A gesture detector to respond to non-exclusive event chains for a
 /// text field.
 ///

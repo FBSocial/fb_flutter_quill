@@ -319,6 +319,10 @@ class RawEditorState extends EditorState
   TextDirection get _textDirection => Directionality.of(context);
 
   @override
+  bool get dirty => _dirty;
+  bool _dirty = false;
+
+  @override
   Widget build(BuildContext context) {
     assert(debugCheckHasMediaQuery(context));
     super.build(context);
@@ -1194,6 +1198,11 @@ class RawEditorState extends EditorState
     );
   }
 
+  @override
+  void insertContent(KeyboardInsertedContent content) {
+
+  }
+
   /// Copy current selection to [Clipboard].
   @override
   void copySelection(SelectionChangedCause cause) {
@@ -1522,6 +1531,18 @@ class RawEditorState extends EditorState
       }
     }
   }
+
+  @override
+  bool get liveTextInputEnabled => false;
+
+  @override
+  bool get lookUpEnabled => false;
+
+  @override
+  bool get searchWebEnabled => false;
+
+  @override
+  bool get shareEnabled => false;
 }
 
 class _Editor extends MultiChildRenderObjectWidget {
