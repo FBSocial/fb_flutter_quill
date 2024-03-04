@@ -45,6 +45,7 @@ class TextLine extends StatefulWidget {
     this.mentionBuilder,
     this.emojiBuilder,
     this.linkParse,
+    this.deactivatedTagIds,
     Key? key,
   }) : super(key: key);
 
@@ -60,6 +61,7 @@ class TextLine extends StatefulWidget {
   final InlineSpan Function(Embed, TextStyle)? mentionBuilder;
   final InlineSpan? Function(String)? emojiBuilder;
   final void Function(String)? linkParse;
+  final List<String>? deactivatedTagIds;
 
   @override
   State<TextLine> createState() => _TextLineState();
@@ -437,6 +439,14 @@ class _TextLineState extends State<TextLine> {
       });
     }
 
+    bool tagDeactivated = false;
+    if (note is leaf.Text) {
+      final tagId = note.style.attributes['tag']?.value;
+      if (tagId is String && tagId.isNotEmpty) {
+        tagDeactivated = (widget.deactivatedTagIds ?? []).contains(tagId);
+      }
+    }
+
     final color = note.style.attributes[Attribute.color.key];
     <String, TextStyle?>{
       Attribute.bold.key: defaultStyles.bold,
@@ -465,6 +475,8 @@ class _TextLineState extends State<TextLine> {
         } else if (k == Attribute.link.key && !isLink) {
           // null value for link should be ignored
           // i.e. nodeStyle.attributes[Attribute.link.key]!.value == null
+        } else if (k == Attribute.tag.key && tagDeactivated) {
+          // res = _merge(res, s!);
         } else {
           res = _merge(res, s!);
         }

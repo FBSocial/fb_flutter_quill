@@ -88,6 +88,7 @@ class RawEditor extends StatefulWidget {
     this.emojiBuilder,
     this.pasteExtension,
     this.linkParse,
+    this.deactivatedTagIds,
   })  : assert(maxHeight == null || maxHeight > 0, 'maxHeight cannot be null'),
         assert(minHeight == null || minHeight >= 0, 'minHeight cannot be null'),
         assert(maxHeight == null || minHeight == null || maxHeight >= minHeight,
@@ -259,6 +260,8 @@ class RawEditor extends StatefulWidget {
   final bool floatingCursorDisabled;
   final IsSelectionInViewport? isSelectionInViewport;
   final double caretOffset;
+
+  final List<String>? deactivatedTagIds;
 
   @override
   State<StatefulWidget> createState() => RawEditorState();
@@ -721,6 +724,7 @@ class RawEditorState extends EditorState
       mentionBuilder: widget.mentionBuilder,
       emojiBuilder: widget.emojiBuilder,
       linkParse: widget.linkParse,
+      deactivatedTagIds: widget.deactivatedTagIds,
     );
     final editableTextLine = EditableTextLine(
         node,

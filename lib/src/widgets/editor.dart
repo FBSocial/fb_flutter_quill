@@ -204,6 +204,7 @@ class QuillEditor extends StatefulWidget {
       this.cursorHeight,
       this.cursorWidth,
       this.cursorRadius,
+      this.deactivatedTagIds,
       Key? key})
       : super(key: key);
 
@@ -458,6 +459,8 @@ class QuillEditor extends StatefulWidget {
   final Map<LogicalKeySet, Intent>? customShortcuts;
   final Map<Type, Action<Intent>>? customActions;
 
+  final List<String>? deactivatedTagIds;
+
   @override
   QuillEditorState createState() => QuillEditorState();
 }
@@ -584,6 +587,7 @@ class QuillEditorState extends State<QuillEditor>
       onImagePaste: widget.onImagePaste,
       customShortcuts: widget.customShortcuts,
       customActions: widget.customActions,
+      deactivatedTagIds: widget.deactivatedTagIds,
     );
 
     final editor = I18n(
