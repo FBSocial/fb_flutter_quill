@@ -10,6 +10,9 @@ import 'package:flutter/scheduler.dart';
 import '../models/documents/nodes/node.dart';
 import 'editor.dart';
 
+typedef DragSelectionUpdateCallback = void Function(
+    DragStartDetails startDetails, DragUpdateDetails updateDetails);
+
 TextSelection localSelection(Node node, TextSelection selection, fromParent) {
   final base = fromParent ? node.offset : node.documentOffset;
   assert(base <= selection.end && selection.start <= base + node.length - 1);
@@ -475,8 +478,7 @@ class TextSelectionHandleOverlay extends StatefulWidget {
   }
 }
 
-class _TextSelectionHandleOverlayState
-    extends State<TextSelectionHandleOverlay>
+class _TextSelectionHandleOverlayState extends State<TextSelectionHandleOverlay>
     with SingleTickerProviderStateMixin {
   // ignore: unused_field
   late Offset _dragPosition;
@@ -755,7 +757,6 @@ class EditorTextSelectionGestureDetector extends StatefulWidget {
   /// another gesture from the touch is recognized.
   final GestureTapCancelCallback? onSingleTapCancel;
 
-
   /// onTapUp for mouse right click
   final GestureTapUpCallback? onSecondarySingleTapUp;
 
@@ -929,8 +930,7 @@ class _EditorTextSelectionGestureDetectorState
     assert(_lastDragStartDetails != null);
     assert(_lastDragUpdateDetails != null);
     if (widget.onDragSelectionUpdate != null) {
-      widget.onDragSelectionUpdate!(
-          _lastDragStartDetails!, _lastDragUpdateDetails!);
+      widget.onDragSelectionUpdate!;
     }
     _dragUpdateThrottleTimer = null;
     _lastDragUpdateDetails = null;

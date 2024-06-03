@@ -394,9 +394,9 @@ class QuillEditor extends StatefulWidget {
       void Function() doShowToolbar)? onTapUp;
 
   // Returns whether gesture is handled
-  final bool Function(
-      TapDownDetails details,
-      TextPosition Function(Offset offset) getPositionForOffset)? onDoubleTapDown;
+  final bool Function(TapDownDetails details,
+          TextPosition Function(Offset offset) getPositionForOffset)?
+      onDoubleTapDown;
 
   // Returns whether gesture is handled
   final bool Function(
@@ -1869,7 +1869,7 @@ class RenderEditor extends RenderEditableContainerBox
   }
 }
 
-class QuillVerticalCaretMovementRun extends Iterator<TextPosition> {
+class QuillVerticalCaretMovementRun implements Iterator<TextPosition> {
   QuillVerticalCaretMovementRun._(
     this._editor,
     this._currentTextPosition,

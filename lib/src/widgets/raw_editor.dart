@@ -1526,6 +1526,27 @@ class RawEditorState extends EditorState
       }
     }
   }
+
+  @override
+  void insertContent(KeyboardInsertedContent content) {
+    // TODO: implement insertContent
+  }
+
+  @override
+  // TODO: implement liveTextInputEnabled
+  bool get liveTextInputEnabled => throw UnimplementedError();
+
+  @override
+  // TODO: implement lookUpEnabled
+  bool get lookUpEnabled => throw UnimplementedError();
+
+  @override
+  // TODO: implement searchWebEnabled
+  bool get searchWebEnabled => throw UnimplementedError();
+
+  @override
+  // TODO: implement shareEnabled
+  bool get shareEnabled => throw UnimplementedError();
 }
 
 class _Editor extends MultiChildRenderObjectWidget {
