@@ -394,4 +394,8 @@ mixin RawEditorStateTextInputClientMixin on EditorState
           ?.addPostFrameCallback((_) => _updateCaretRectIfNeeded());
     }
   }
+
+  // Added for Flutter 3.10+ TextInputClient compatibility
+  @override
+  void insertContent(KeyboardInsertedContent content) {}
 }

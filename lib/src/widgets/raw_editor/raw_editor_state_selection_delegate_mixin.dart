@@ -160,4 +160,17 @@ mixin RawEditorStateSelectionDelegateMixin on EditorState
 
   @override
   bool get selectAllEnabled => widget.toolbarOptions.selectAll;
+
+  // Added for Flutter 3.10+ TextSelectionDelegate compatibility
+  @override
+  bool get lookUpEnabled => true;
+
+  @override
+  bool get searchWebEnabled => true;
+
+  @override
+  bool get shareEnabled => true;
+
+  @override
+  bool get liveTextInputEnabled => false;
 }
