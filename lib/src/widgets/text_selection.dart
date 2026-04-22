@@ -10,6 +10,9 @@ import 'package:flutter/scheduler.dart';
 import '../models/documents/nodes/node.dart';
 import 'editor.dart';
 
+typedef DragSelectionUpdateCallback = void Function(
+    DragStartDetails startDetails, DragUpdateDetails updateDetails);
+
 TextSelection localSelection(Node node, TextSelection selection, fromParent) {
   final base = fromParent ? node.offset : node.documentOffset;
   assert(base <= selection.end && selection.start <= base + node.length - 1);

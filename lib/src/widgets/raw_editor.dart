@@ -276,6 +276,19 @@ class RawEditorState extends EditorState
         RawEditorStateSelectionDelegateMixin {
   final GlobalKey _editorKey = GlobalKey();
 
+  // --- Flutter 3.27 required overrides ---
+  @override
+  bool get liveTextInputEnabled => false;
+  @override
+  bool get lookUpEnabled => true;
+  @override
+  bool get searchWebEnabled => true;
+  @override
+  bool get shareEnabled => true;
+  @override
+  void insertContent(KeyboardInsertedContent content) {}
+  // --- end Flutter 3.27 overrides ---
+
   KeyboardVisibilityController? _keyboardVisibilityController;
   StreamSubscription<bool>? _keyboardVisibilitySubscription;
   bool _keyboardVisible = false;
